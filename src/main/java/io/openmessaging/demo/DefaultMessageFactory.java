@@ -1,8 +1,8 @@
 package io.openmessaging.demo;
-
 import io.openmessaging.BytesMessage;
 import io.openmessaging.MessageFactory;
 import io.openmessaging.MessageHeader;
+
 
 public class DefaultMessageFactory implements MessageFactory {
 
@@ -11,6 +11,7 @@ public class DefaultMessageFactory implements MessageFactory {
         defaultBytesMessage.putHeaders(MessageHeader.TOPIC, topic);
         return defaultBytesMessage;
     }
+
 
     @Override public BytesMessage createBytesMessageToQueue(String queue, byte[] body) {
         DefaultBytesMessage defaultBytesMessage = new DefaultBytesMessage(body);

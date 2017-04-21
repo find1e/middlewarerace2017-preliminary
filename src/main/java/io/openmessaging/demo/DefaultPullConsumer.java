@@ -1,8 +1,10 @@
+
 package io.openmessaging.demo;
 
 import io.openmessaging.KeyValue;
 import io.openmessaging.Message;
 import io.openmessaging.PullConsumer;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -15,7 +17,7 @@ public class DefaultPullConsumer implements PullConsumer {
     private String queue;
     private Set<String> buckets = new HashSet<>();
     private List<String> bucketList = new ArrayList<>();
-
+    private InputStream inputStream=null;
     private int lastIndex = 0;
 
     public DefaultPullConsumer(KeyValue properties) {
@@ -29,17 +31,35 @@ public class DefaultPullConsumer implements PullConsumer {
 
 
     @Override public synchronized Message poll() {
-        if (buckets.size() == 0 || queue == null) {
+
+        if (buckets.size() == 0|| queue == null) {
             return null;
         }
         //use Round Robin
         int checkNum = 0;
-        while (++checkNum <= bucketList.size()) {
-            String bucket = bucketList.get((++lastIndex) % (bucketList.size()));
-            Message message = messageStore.pullMessage(queue, bucket);
+        while (checkNum < bucketList.size()) {
+
+            String bucket = bucketList.get(checkNum);
+
+            if(bucket==null){
+
+                if(checkNum==bucketList.size()){
+
+                    return null;
+                }
+                ++checkNum;
+                continue;
+
+            }
+           // String bucket = bucketList.get((++lastIndex) % (bucketList.size()));
+
+            Message message = messageStore.pullMessage(queue, bucket,properties);
             if (message != null) {
                 return message;
             }
+
+            bucketList.set(checkNum,null);
+            ++checkNum;
         }
         return null;
     }
@@ -57,8 +77,13 @@ public class DefaultPullConsumer implements PullConsumer {
     }
 
     @Override public synchronized void attachQueue(String queueName, Collection<String> topics) {
+       /* try {
+            inputStream =new FileInputStream(properties.getString("STORE_PATH")+"/"+ MessageHeader.QUEUE+"/"+queueName);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }*/
         if (queue != null && !queue.equals(queueName)) {
-            throw new ClientOMSException("You have alreadly attached to a queue " + queue);
+          return ;
         }
         queue = queueName;
         buckets.add(queueName);
@@ -69,3 +94,4 @@ public class DefaultPullConsumer implements PullConsumer {
 
 
 }
+
