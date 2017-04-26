@@ -68,9 +68,14 @@ public class DefaultBytesMessage implements BytesMessage {
         return this;
     }
 
-    @Override public Message putProperties(String key, String value) {
+    @Override public Message putProperties(String key,String value) {
         if (properties == null) properties = new DefaultKeyValue();
         properties.put(key, value);
+        return this;
+    }
+    public Message putProperties(KeyValue keyValue){
+        this.properties=keyValue;
+
         return this;
     }
 }

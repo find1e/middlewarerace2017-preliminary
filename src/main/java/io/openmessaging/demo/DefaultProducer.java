@@ -36,7 +36,12 @@ public class DefaultProducer implements Producer {
             }
         }
 
-        return messageFactory.createBytesMessageToTopic(topic, body);
+        DefaultBytesMessage defaultBytesMessage= (DefaultBytesMessage) messageFactory.createBytesMessageToTopic(topic, body);
+        String key= (String) properties.keySet().toArray()[0];
+
+       defaultBytesMessage.putProperties(key,properties.getString(key));
+        return defaultBytesMessage;
+
     }
 
     @Override public BytesMessage createBytesMessageToQueue(String queue, byte[] body) {
@@ -48,8 +53,12 @@ public class DefaultProducer implements Producer {
                 e.printStackTrace();
             }
         }
+       DefaultBytesMessage defaultBytesMessage= (DefaultBytesMessage) messageFactory.createBytesMessageToQueue(queue, body);
 
-        return messageFactory.createBytesMessageToQueue(queue, body);
+        String key= (String) properties.keySet().toArray()[0];
+
+        defaultBytesMessage.putProperties(key,properties.getString(key));
+        return defaultBytesMessage;
     }
 
 
@@ -58,10 +67,12 @@ public class DefaultProducer implements Producer {
     }
 
     @Override public void send(Message message) {
+
         if (message == null) return ;
         String topic = message.headers().getString(MessageHeader.TOPIC);
         String queue = message.headers().getString(MessageHeader.QUEUE);
         if ((topic == null && queue == null) || (topic != null && queue != null)) {
+
          return ;
         }
 

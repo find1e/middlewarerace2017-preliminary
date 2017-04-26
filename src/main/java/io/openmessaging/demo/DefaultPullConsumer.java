@@ -3,13 +3,17 @@ package io.openmessaging.demo;
 
 import io.openmessaging.KeyValue;
 import io.openmessaging.Message;
+import io.openmessaging.MessageHeader;
 import io.openmessaging.PullConsumer;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.lang.reflect.Array;
+import java.util.*;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class DefaultPullConsumer implements PullConsumer {
     private MessageStore messageStore = MessageStore.getInstance();
@@ -17,9 +21,9 @@ public class DefaultPullConsumer implements PullConsumer {
     private String queue;
     private Set<String> buckets = new HashSet<>();
     private List<String> bucketList = new ArrayList<>();
-    private InputStream inputStream=null;
-    private int lastIndex = 0;
 
+
+   // int remain;
     public DefaultPullConsumer(KeyValue properties) {
         this.properties = properties;
     }
@@ -29,41 +33,38 @@ public class DefaultPullConsumer implements PullConsumer {
         return properties;
     }
 
+    @Override public  Message poll() {
+        while (true){
+            if(bucketList.size()==0){
+                return null;
 
-    @Override public synchronized Message poll() {
+            }
+            for (int checkNum=0;checkNum<bucketList.size();checkNum++) {
+              MessageProxy messageProxy= messageStore.pullMessage(queue,bucketList.get(checkNum),properties);
+                if(messageProxy==null){
 
-        if (buckets.size() == 0|| queue == null) {
-            return null;
-        }
-        //use Round Robin
-        int checkNum = 0;
-        while (checkNum < bucketList.size()) {
-
-            String bucket = bucketList.get(checkNum);
-
-            if(bucket==null){
-
-                if(checkNum==bucketList.size()){
-
-                    return null;
+                    continue;
                 }
-                ++checkNum;
-                continue;
+                if(messageProxy.isEnd()){
+                    bucketList.remove(checkNum);
+                    break;
+                }
 
+              //  DefaultBytesMessage message=messageProxy.getDefaultBytesMessage();
+             //   Lock lock=messageProxy.getLock();
+
+                /*if(lock!=null){
+                    lock.unlock();
+                    return message;
+
+                }*/
+
+                return messageProxy.getDefaultBytesMessage();
             }
-           // String bucket = bucketList.get((++lastIndex) % (bucketList.size()));
 
-            Message message = messageStore.pullMessage(queue, bucket,properties);
-            if (message != null) {
-                return message;
-            }
 
-            bucketList.set(checkNum,null);
-            ++checkNum;
         }
-        return null;
     }
-
     @Override public Message poll(KeyValue properties) {
         throw new UnsupportedOperationException("Unsupported");
     }
@@ -75,23 +76,18 @@ public class DefaultPullConsumer implements PullConsumer {
     @Override public void ack(String messageId, KeyValue properties) {
         throw new UnsupportedOperationException("Unsupported");
     }
+    @Override public  void attachQueue(String queueName, Collection<String> topics) {
 
-    @Override public synchronized void attachQueue(String queueName, Collection<String> topics) {
-       /* try {
-            inputStream =new FileInputStream(properties.getString("STORE_PATH")+"/"+ MessageHeader.QUEUE+"/"+queueName);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }*/
         if (queue != null && !queue.equals(queueName)) {
           return ;
         }
         queue = queueName;
-        buckets.add(queueName);
+
         buckets.addAll(topics);
+        buckets.add(queueName);
         bucketList.clear();
         bucketList.addAll(buckets);
+
+
     }
-
-
 }
-
