@@ -13,44 +13,39 @@ public class DemoTester {
 
     public static void main(String[] args) {
         final KeyValue properties = new DefaultKeyValue();
-        /*
-        //ʵ�ʲ���ʱ���� STORE_PATH ����洢·��
-        //����producer��consumer��STORE_PATH����һ���ģ�ѡ�ֿ��������ڸ�·���´����ļ�
-         */
-        properties.put("STORE_PATH", "/home/admin/test");
+
+        properties.put("STORE_PATH","D:\\race");
+      //  properties.put("STORE_PATH", "/home/admin/test");
         // properties.put("STORE_PATH", "/storage/sdcard0/AppProjects/alinative")
-        //
-        //
-        //����Գ���Ĳ����߼���ʵ���������ƣ���ע�������ǵ��̵߳ģ�ʵ�ʲ���ʱ���Ƕ��̵߳ģ����ҷ�����֮���Kill���̣����������߼�
+
         final Producer producer = new DefaultProducer(properties);
         //�����������
-        String topic1 = "TOPIC1"; //ʵ�ʲ���ʱ��Ż���100��Topic����
-        String topic2 = "TOPIC2"; //ʵ�ʲ���ʱ��Ż���100��Topic����
-        String queue1 = "QUEUE1"; //ʵ�ʲ���ʱ��Ż���100��Queue����
-        String queue2 = "QUEUE2"; //ʵ�ʲ���ʱ��Ż���100��Queue����
-        List<Message> messagesForTopic1 = new ArrayList<>(1024);
-        List<Message> messagesForTopic2 = new ArrayList<>(1024);
-        List<Message> messagesForQueue1 = new ArrayList<>(1024);
-        List<Message> messagesForQueue2 = new ArrayList<>(1024);
+        String topic1 = "TOPIC1";
+        String topic2 = "TOPIC2";
+        String queue1 = "QUEUE1";
+        String queue2 = "QUEUE2";
+       final List<Message> messagesForTopic1 = new ArrayList<>(1024);
+       final List<Message> messagesForTopic2 = new ArrayList<>(1024);
+       final List<Message> messagesForQueue1 = new ArrayList<>(1024);
+       final List<Message> messagesForQueue2 = new ArrayList<>(1024);
 
 
         for (int i = 0; i < 1024; i++) {
-            //ע��ʵ�ʱ������ܻ�������Ϣ��headers����properties���������������
-            messagesForTopic1.add(producer.createBytesMessageToTopic(topic1, (topic1 + i).getBytes()));
+
+           messagesForTopic1.add(producer.createBytesMessageToTopic(topic1, (topic1 + i).getBytes()));
             messagesForTopic2.add(producer.createBytesMessageToTopic(topic2, (topic2 + i).getBytes()));
             messagesForQueue1.add(producer.createBytesMessageToQueue(queue1, (queue1 + i).getBytes()));
             messagesForQueue2.add(producer.createBytesMessageToQueue(queue2, (queue2 + i).getBytes()));
         }
         long start = System.currentTimeMillis();
-        //����, ʵ�ʲ���ʱ�����ö��߳�������, ÿ���̷߳����Լ���Topic��Queue
-        for (int i = 0; i < 1024; i++) {
-
-            producer.send(messagesForTopic1.get(i));
-            producer.send(messagesForTopic2.get(i));
-            producer.send(messagesForQueue1.get(i));
-            producer.send(messagesForQueue2.get(i));
-        }
-  /*    new Thread(new Runnable() {
+//        for (int i = 0; i < 1024; i++) {
+//
+//            producer.send(messagesForTopic1.get(i));
+//            producer.send(messagesForTopic2.get(i));
+//            producer.send(messagesForQueue1.get(i));
+//            producer.send(messagesForQueue2.get(i));
+//        }
+      new Thread(new Runnable() {
            @Override
            public void run() {
                for (int i = 0; i < 1024; i++) {
@@ -97,7 +92,7 @@ public class DemoTester {
                 }
             }
         }).start();
-*/
+
 
 
         long end = System.currentTimeMillis();
@@ -105,9 +100,9 @@ public class DemoTester {
         long T1 = end - start;
 
         //�뱣֤����д�������
-        ReentrantLock lock=new ReentrantLock();
+        ReentrantLock lock=new ReentrantLock(true);
 
-        //��������1��ʵ�ʲ���ʱ��Kill�����ͽ��̣���ȡ���̽�������
+
 
             Task task1=new Task();
             Task2 task2=new Task2();
@@ -139,8 +134,8 @@ public class DemoTester {
 
         //多线程环境下测试
 
-          thread1.start();
-          thread2.start();
+         // thread1.start();
+         // thread2.start();
     }
 
 }
@@ -197,7 +192,7 @@ lock.unlock();
                    // if(topic2Offset>=messagesForTopic2.size()){
                   //      continue;
                    // }
-                   boolean compare=compare((DefaultBytesMessage) messagesForTopic2.get(topic2Offset++),(DefaultBytesMessage) message);
+                    boolean compare=compare((DefaultBytesMessage) messagesForTopic1.get(topic1Offset++),(DefaultBytesMessage) message);
                     System.out.println("queue2"+compare);
                 } else {
 

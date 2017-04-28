@@ -3,6 +3,7 @@ package io.openmessaging.demo;
 import io.openmessaging.KeyValue;
 import io.openmessaging.Message;
 import io.openmessaging.MessageHeader;
+import io.openmessaging.StreamCallBack;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -22,7 +23,8 @@ import java.util.*;
 import java.util.concurrent.*;
 
 
-public class MessageStore {
+
+public class MessageStore  {
 
     private static final MessageStore INSTANCE = new MessageStore();
 
@@ -44,23 +46,45 @@ public class MessageStore {
 
     private DistributeLock distributeLock=new DistributeLock(100);
 
+    private DistributeLock sendLock=new DistributeLock(120);
 
-
+    final ThreadLocal threadLocal=new ThreadLocal();
 
 
     public  void putMessage(String bucket, Message message, KeyValue properties) throws IOException {
 
         String fileType = message.headers().containsKey(MessageHeader.TOPIC) ? MessageHeader.TOPIC : MessageHeader.QUEUE;
-        File file = new File(properties.getString("STORE_PATH") + "/" + fileType + "/" + bucket);
-        FileOutputStream fileOutputStream = new FileOutputStream(file, true);
-        FileChannel fileChannel = fileOutputStream.getChannel();
+        String fileLocal=properties.getString("STORE_PATH") + "/" + fileType + "/" + bucket;
+
+        threadLocal.set(fileLocal);
+        FileChannelProxy fileChannelProxy=null;
+        StreamCallBack callBack=new StreamCallBack() {
+            @Override
+            public FileChannelProxy callBack() {
+                FileOutputStream fileOutputStream= null;
+                try {
+                    fileOutputStream = new FileOutputStream((String) threadLocal.get(),true);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+                FileChannel fileChannel=fileOutputStream.getChannel();
+                FileChannelProxy fileChannelProxy=new FileChannelProxy();
+                fileChannelProxy.setFileChannel(fileChannel);
+                fileChannelProxy.setFileOutputStream(fileOutputStream);
+                return fileChannelProxy;
+            }
+        };
+        while((fileChannelProxy=sendLock.lock(bucket,callBack))==null);
+
+        FileChannel fileChannel=fileChannelProxy.getFileChannel();
+
         DefaultBytesMessage defaultBytesMessage = (DefaultBytesMessage) message;
         byte[] body=defaultBytesMessage.getBody();
         int length=body.length;
         ByteBuffer byteBuffer = ByteBuffer.allocate(length + 2);
 
-        int i=0;//i表示1字节可以表示的数字大小，
-        int j=0;//j表示超出多少个字节
+        int i=0;//i��ʾ1�ֽڿ��Ա�ʾ�����ִ�С��
+        int j=0;//j��ʾ�������ٸ��ֽ�
         byte[] lenFlag=new byte[2];
         if(length>255){
         j=length/255;
@@ -70,13 +94,13 @@ public class MessageStore {
         lenFlag[1]= (byte) i;
         byteBuffer.put(lenFlag);
         byteBuffer.put(defaultBytesMessage.getBody());
+
         byteBuffer.flip();
 
         while (byteBuffer.hasRemaining()) {
             fileChannel.write(byteBuffer);
         }
-        fileChannel.close();
-        fileOutputStream.close();
+        sendLock.unLock(fileChannelProxy);
     }
 
     public static void main(String[] args) throws FileNotFoundException, IOException {
@@ -132,7 +156,7 @@ public class MessageStore {
 
                 inputStream.getFileInputStream().close();
                 File file = new File(fileLocal);
-                file.delete();
+
 
 
                 return new MessageProxy(true);
@@ -151,7 +175,7 @@ public class MessageStore {
             len += lenFlag[1];
 
             ByteBuffer buff = ByteBuffer.allocate(len);
-            //System.out.println("长度"+len);
+            //System.out.println("����"+len);
 
             fileChannel.read(buff);
 
@@ -176,8 +200,29 @@ public class MessageStore {
 
 
     public  MessageProxy readTopic(String fileLocal,String bucket,KeyValue keyValue){
-    //todo action 从 lock中分离出来
-        FileChannelProxy fileChannelProxy=distributeLock.lock(bucket,fileLocal);
+
+
+        threadLocal.set(fileLocal);
+        StreamCallBack streamCallBack=new StreamCallBack() {
+            @Override
+            public FileChannelProxy callBack(){
+                FileInputStream fileInputStream=null;
+                FileChannel fileChannel=null;
+                try {
+                   fileInputStream=new FileInputStream((String) threadLocal.get());
+                    fileChannel=fileInputStream.getChannel();
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+              FileChannelProxy fileChannelProxy=new FileChannelProxy();
+                fileChannelProxy.setFileInputStream(fileInputStream);
+                fileChannelProxy.setFileChannel(fileChannel);
+                return fileChannelProxy;
+            }
+
+
+        };
+        FileChannelProxy fileChannelProxy=distributeLock.lock(bucket,streamCallBack);
 
         if(fileChannelProxy==null){
 
@@ -225,7 +270,7 @@ public class MessageStore {
                 fileChannelProxy.getFileInputStream().close();
                 fileChannelProxy.setEnd(true);
                 File file = new File(fileLocal);
-                file.delete();
+
                //todo remove filechannelproxy on lockmap
 
                 MessageProxy messageProxy=new MessageProxy(true);
@@ -246,7 +291,7 @@ public class MessageStore {
             len += lenFlag[1];
 
             ByteBuffer buff = ByteBuffer.allocate(len);
-            //System.out.println("长度"+len);
+            //System.out.println("����"+len);
 
             fileChannel.read(buff);
 
@@ -352,4 +397,5 @@ class Mytask implements  Runnable{
         read();
     }*/
 }
+
 

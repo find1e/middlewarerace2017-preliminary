@@ -4,7 +4,10 @@ import io.openmessaging.exception.OMSException;
 import io.openmessaging.exception.OMSResourceNotExistException;
 import io.openmessaging.exception.OMSRuntimeException;
 
-public class ClientOMSException extends OMSRuntimeException {
+import java.nio.channels.Channel;
+import java.nio.charset.CharacterCodingException;
+
+class ClientOMSException extends OMSRuntimeException {
 
     public String message;
     public ClientOMSException(String message) {
@@ -23,3 +26,4 @@ public class ClientOMSException extends OMSRuntimeException {
 
 
 }
+

@@ -2,7 +2,12 @@
 package io.openmessaging.demo;
 
 
-import io.openmessaging.*;
+import io.openmessaging.BytesMessage;
+import io.openmessaging.KeyValue;
+import io.openmessaging.Message;
+import io.openmessaging.MessageFactory;
+import io.openmessaging.MessageHeader;
+import io.openmessaging.Producer;
 
 
 import java.io.File;
@@ -88,15 +93,6 @@ public class DefaultProducer implements Producer {
         throw new UnsupportedOperationException("Unsupported");
     }
 
-    @Override
-    public Promise<Void> sendAsync(Message message) {
-        return null;
-    }
-
-    @Override
-    public Promise<Void> sendAsync(Message message, KeyValue properties) {
-        return null;
-    }
 
 
     @Override public void sendOneway(Message message) {
@@ -107,23 +103,4 @@ public class DefaultProducer implements Producer {
         throw new UnsupportedOperationException("Unsupported");
     }
 
-    @Override
-    public BatchToPartition createBatchToPartition(String partitionName) {
-        return null;
-    }
-
-    @Override
-    public BatchToPartition createBatchToPartition(String partitionName, KeyValue properties) {
-        return null;
-    }
-
-    @Override
-    public void start() {
-
-    }
-
-    @Override
-    public void shutdown() {
-
-    }
 }

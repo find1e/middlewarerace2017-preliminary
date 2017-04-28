@@ -1,5 +1,6 @@
 package io.openmessaging.demo;
 
+import io.openmessaging.StreamCallBack;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -15,6 +16,7 @@ class DistributeLock  {
     private int size;
     AtomicBoolean atomic = new AtomicBoolean(true);
 
+
     public DistributeLock(int init) {
         size = init;
         nodes = new Node[init];
@@ -24,7 +26,7 @@ class DistributeLock  {
         return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
     }
 
-    public FileChannelProxy lock(String bucked,String local){
+    public FileChannelProxy lock(String bucked, StreamCallBack callBack){
         if (!atomic.compareAndSet(true, false)) {
             return null;
         }
@@ -34,35 +36,23 @@ class DistributeLock  {
 
         if(node==null){
 
-            fileChannelProxy=action(local);
+            fileChannelProxy=callBack.callBack();
            node=put(bucked,fileChannelProxy);
         }
 
          fileChannelProxy=node.getValue();
 
-        ReentrantLock lock=fileChannelProxy.getLock();
-        lock.lock();
+        AtomicBoolean lock=fileChannelProxy.getLock();
+        while(!lock.compareAndSet(true, false));
         atomic.set(true);
         return fileChannelProxy;
     }
 
     public void unLock(FileChannelProxy fileChannelProxy){
-       ReentrantLock lock=fileChannelProxy.getLock();
-        lock.unlock();
+       AtomicBoolean lock=fileChannelProxy.getLock();
+        lock.set(true);
     }
-    public FileChannelProxy action(String local) {
-        FileInputStream fileInputStream= null;
-        try {
-            fileInputStream = new FileInputStream(local);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        FileChannel fileChannel=fileInputStream.getChannel();
-        FileChannelProxy fileChannelProxy=new FileChannelProxy();
-        fileChannelProxy.setFileChannel(fileChannel);
-        fileChannelProxy.setFileInputStream(fileInputStream);
-        return fileChannelProxy;
-    }
+
     public   Node put(String key,FileChannelProxy fileChannelProxy) {
 
         int hash=size & hash(key);

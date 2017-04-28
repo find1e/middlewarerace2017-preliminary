@@ -1,7 +1,10 @@
 package io.openmessaging.demo;
 
+import javax.imageio.stream.FileImageOutputStream;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.nio.channels.FileChannel;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -12,8 +15,9 @@ public class FileChannelProxy {
     private int readFlag=0;
     private  boolean isEnd=false;
     private FileInputStream fileInputStream;
-    private ReentrantLock lock=new ReentrantLock();
+    private AtomicBoolean lock=new AtomicBoolean(true);
     private DefaultBytesMessage message=null;
+    private FileOutputStream fileOutputStream;
 
 
     public int getReadFlag() {
@@ -32,11 +36,11 @@ public class FileChannelProxy {
         isEnd = end;
     }
 
-    public ReentrantLock getLock() {
+    public AtomicBoolean getLock() {
         return lock;
     }
 
-    public void setLock(ReentrantLock lock) {
+    public void setLock(AtomicBoolean lock) {
         this.lock = lock;
     }
 
@@ -62,5 +66,13 @@ public class FileChannelProxy {
 
     public void setMessage(DefaultBytesMessage message) {
         this.message = message;
+    }
+
+    public FileOutputStream getFileOutputStream() {
+        return fileOutputStream;
+    }
+
+    public void setFileOutputStream(FileOutputStream fileOutputStream) {
+        this.fileOutputStream = fileOutputStream;
     }
 }
