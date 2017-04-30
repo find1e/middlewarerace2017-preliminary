@@ -32,6 +32,7 @@ public class DefaultProducer implements Producer {
 
 
     @Override public BytesMessage createBytesMessageToTopic(String topic, byte[] body) {
+
         if(!hashMap.containsKey(topic)){
             File fileChild = new File(properties.getString("STORE_PATH") +"/"+MessageHeader.TOPIC+"/"+topic);
             try {
@@ -50,16 +51,30 @@ public class DefaultProducer implements Producer {
     }
 
     @Override public BytesMessage createBytesMessageToQueue(String queue, byte[] body) {
-        if(!hashMap.containsKey(queue)){
-            File fileChild = new File(properties.getString("STORE_PATH") +"/"+MessageHeader.QUEUE+"/"+queue);
-            try {
-                fileChild.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
+        DefaultBytesMessage defaultBytesMessage=null;
+        if(queue.substring(0,queue.indexOf("_")).equals("QUEUE")) {
+            if (!hashMap.containsKey(queue)) {
+                File fileChild = new File(properties.getString("STORE_PATH") + "/" + MessageHeader.QUEUE + "/" + queue);
+                try {
+                    fileChild.createNewFile();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
-        }
-       DefaultBytesMessage defaultBytesMessage= (DefaultBytesMessage) messageFactory.createBytesMessageToQueue(queue, body);
+           defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToQueue(queue, body);
+        }else{
+            if (!hashMap.containsKey(queue)) {
+                File fileChild = new File(properties.getString("STORE_PATH") + "/" + MessageHeader.TOPIC + "/" + queue);
+                try {
+                    fileChild.createNewFile();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToTopic(queue, body);
 
+
+        }
         String key= (String) properties.keySet().toArray()[0];
 
         defaultBytesMessage.putProperties(key,properties.getString(key));
@@ -73,16 +88,10 @@ public class DefaultProducer implements Producer {
 
     @Override public void send(Message message) {
 
-        if (message == null) return ;
-        String topic = message.headers().getString(MessageHeader.TOPIC);
-        String queue = message.headers().getString(MessageHeader.QUEUE);
-        if ((topic == null && queue == null) || (topic != null && queue != null)) {
 
-         return ;
-        }
 
         try {
-            messageStore.putMessage(topic != null ? topic : queue,message,properties);
+            messageStore.putMessage(message,properties);
         } catch (IOException e) {
             e.printStackTrace();
         }

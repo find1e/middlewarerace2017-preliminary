@@ -87,6 +87,7 @@ public class DefaultPullConsumer implements PullConsumer {
         buckets.add(queueName);
         bucketList.clear();
         bucketList.addAll(buckets);
+        messageStore.attachInit(bucketList,properties);
 
 
     }

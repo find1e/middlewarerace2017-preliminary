@@ -7,6 +7,7 @@ import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
+
 /**
  * Created by E450C on 2017/4/24.
  */
@@ -18,6 +19,7 @@ public class FileChannelProxy {
     private AtomicBoolean lock=new AtomicBoolean(true);
     private DefaultBytesMessage message=null;
     private FileOutputStream fileOutputStream;
+    private ThreadLocal threadLocal=new ThreadLocal();
 
 
     public int getReadFlag() {
@@ -74,5 +76,15 @@ public class FileChannelProxy {
 
     public void setFileOutputStream(FileOutputStream fileOutputStream) {
         this.fileOutputStream = fileOutputStream;
+    }
+
+    public Long getPosition() {
+
+        return  threadLocal.get()==null?0: (Long) threadLocal.get();
+    }
+
+    public void setPosiLtion(Long position) {
+        threadLocal.set(position);
+
     }
 }

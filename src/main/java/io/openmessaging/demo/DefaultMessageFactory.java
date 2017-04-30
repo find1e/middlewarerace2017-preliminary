@@ -11,18 +11,22 @@ import java.security.Key;
 
 public class DefaultMessageFactory implements MessageFactory {
 
-    @Override public BytesMessage createBytesMessageToTopic(String topic, byte[] body) {
+    @Override public BytesMessage createBytesMessageToTopic(String bucket, byte[] body) {
         DefaultBytesMessage defaultBytesMessage = new DefaultBytesMessage(body);
-
-        defaultBytesMessage.putHeaders(MessageHeader.TOPIC, topic);
+//        String name=bucket.substring(0,bucket.indexOf("_"));
+//        String Type="QUEUE".equals(name)?MessageHeader.QUEUE:MessageHeader.TOPIC;
+        defaultBytesMessage.putHeaders(MessageHeader.TOPIC,bucket);
         return defaultBytesMessage;
     }
 
 
-    @Override public BytesMessage createBytesMessageToQueue(String queue, byte[] body) {
+    @Override public BytesMessage createBytesMessageToQueue(String bucket, byte[] body) {
         DefaultBytesMessage defaultBytesMessage = new DefaultBytesMessage(body);
+        /*String name=bucket.substring(0,bucket.indexOf("_"));
+        String Type="QUEUE".equals(name)?MessageHeader.QUEUE:MessageHeader.TOPIC;*/
 
-        defaultBytesMessage.putHeaders(MessageHeader.QUEUE, queue);
+
+        defaultBytesMessage.putHeaders(MessageHeader.QUEUE,bucket);
         return defaultBytesMessage;
     }
 }
