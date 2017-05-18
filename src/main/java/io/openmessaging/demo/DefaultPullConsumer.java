@@ -60,6 +60,7 @@ public class DefaultPullConsumer implements PullConsumer {
                 }*/
 
                 return messageProxy.getDefaultBytesMessage();
+
             }
 
 
@@ -78,9 +79,6 @@ public class DefaultPullConsumer implements PullConsumer {
     }
     @Override public  void attachQueue(String queueName, Collection<String> topics) {
 
-        if (queue != null && !queue.equals(queueName)) {
-            return ;
-        }
         queue = queueName;
 
         buckets.addAll(topics);

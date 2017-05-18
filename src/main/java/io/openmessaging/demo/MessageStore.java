@@ -34,23 +34,9 @@ public class MessageStore  {
         return INSTANCE;
     }
 
-    private Map<String, ArrayList<Message>> messageBuckets = new HashMap<>();
-
-    private Map<String, HashMap<String, Integer>> queueOffsets = new HashMap<>();
-
-    private Lock lockFile = new ReentrantLock();
-
-    private Lock lockGet=new ReentrantLock();
-
-    private Lock lockRead=new ReentrantLock();
-
     private HashMap<String,FileChannelProxy> queueMap = new HashMap(20);
 
     private HashMap<String,FileChannelProxy> topicMap = new HashMap(120);
-
-    private DistributeLock sendLock=new DistributeLock(120);
-
-    final ThreadLocal threadLocal=new ThreadLocal();
 
     private HashMap<String,FileChannelProxy> sendMap;
 
@@ -186,7 +172,7 @@ public class MessageStore  {
             fileChannel=inputStream.getFileChannel();
 
             if (fileChannel.read(preBuff) == -1) {
-                System.out.println("@" + bucket + "over");
+              //  System.out.println("@" + bucket + "over");
 
 
                 fileChannel.close();
@@ -289,7 +275,7 @@ public class MessageStore  {
             //  System.out.println(fileChannelProxy.getPosition());
             if (fileChannel.read(preBuff) == -1) {
 
-                System.out.println("@" + bucket + "over");
+              //  System.out.println("@" + bucket + "over");
 
 
                 fileChannel.close();
