@@ -3,8 +3,10 @@ package io.openmessaging.demo;
 import javax.imageio.stream.FileImageOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 
@@ -16,10 +18,16 @@ public class FileChannelProxy {
     private int readFlag=0;
     private  boolean isEnd=false;
     private FileInputStream fileInputStream;
-    private AtomicBoolean lock=new AtomicBoolean(true);
     private DefaultBytesMessage message=null;
     private FileOutputStream fileOutputStream;
     private ThreadLocal threadLocal=new ThreadLocal();
+    // private AtomicBoolean lock=new AtomicBoolean(true);
+    private Lock lock=new ReentrantLock();
+    private ByteBuffer byteBuffer;
+    private int buffSize=0;
+    ByteBuffer preBuff = ByteBuffer.allocate(2);
+
+
 
 
     public int getReadFlag() {
@@ -38,13 +46,9 @@ public class FileChannelProxy {
         isEnd = end;
     }
 
-    public AtomicBoolean getLock() {
-        return lock;
-    }
 
-    public void setLock(AtomicBoolean lock) {
-        this.lock = lock;
-    }
+
+
 
     public FileChannel getFileChannel() {
         return fileChannel;
@@ -87,4 +91,44 @@ public class FileChannelProxy {
         threadLocal.set(position);
 
     }
+
+    public Lock getLock() {
+        return lock;
+    }
+
+    public void setLock(Lock lock) {
+        this.lock = lock;
+    }
+
+    public ByteBuffer getByteBuffer() {
+        return byteBuffer;
+    }
+
+    public void setByteBuffer(ByteBuffer byteBuffer) {
+        this.byteBuffer = byteBuffer;
+    }
+
+    public int getBuffSize() {
+        return buffSize;
+    }
+
+    public void setBuffSize(int buffSize) {
+        this.buffSize = buffSize;
+    }
+
+    public ByteBuffer getPreBuff() {
+        return preBuff;
+    }
+
+    public void setPreBuff(ByteBuffer buff) {
+        this.preBuff = buff;
+    }
+
+  /*  public AtomicBoolean getLock() {
+        return lock;
+    }
+
+    public void setLock(AtomicBoolean lock) {
+        this.lock = lock;
+    }*/
 }

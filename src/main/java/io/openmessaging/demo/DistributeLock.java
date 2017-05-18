@@ -31,25 +31,25 @@ class DistributeLock  {
             return null;
         }
         FileChannelProxy fileChannelProxy=null;
-     Node node=get(bucked);
+        Node node=get(bucked);
 
 
         if(node==null){
 
             fileChannelProxy=callBack.callBack();
-           node=put(bucked,fileChannelProxy);
+            node=put(bucked,fileChannelProxy);
         }
-
-         fileChannelProxy=node.getValue();
-
-        AtomicBoolean lock=fileChannelProxy.getLock();
-        while(!lock.compareAndSet(true, false));
         atomic.set(true);
+        fileChannelProxy=node.getValue();
+
+        AtomicBoolean lock= (AtomicBoolean) fileChannelProxy.getLock();
+        while(!lock.compareAndSet(true,false));
+
         return fileChannelProxy;
     }
 
     public void unLock(FileChannelProxy fileChannelProxy){
-       AtomicBoolean lock=fileChannelProxy.getLock();
+        AtomicBoolean lock= (AtomicBoolean) fileChannelProxy.getLock();
         lock.set(true);
     }
 
@@ -67,8 +67,8 @@ class DistributeLock  {
         while ((temp=preNode.getNext())!=null) {
             preNode=temp;
             if (key.equals(temp.getKey())) {
-               temp.setValue(fileChannelProxy);
-               return node;
+                temp.setValue(fileChannelProxy);
+                return node;
             }
 
         }
@@ -96,7 +96,7 @@ class DistributeLock  {
             if (key.equals(node.getKey())) {
                 return node;
             }
-            }
+        }
         return null;
     }
 

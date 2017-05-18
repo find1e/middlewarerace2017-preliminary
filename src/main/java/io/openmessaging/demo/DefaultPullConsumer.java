@@ -23,7 +23,7 @@ public class DefaultPullConsumer implements PullConsumer {
     private List<String> bucketList = new ArrayList<>();
 
 
-   // int remain;
+    // int remain;
     public DefaultPullConsumer(KeyValue properties) {
         this.properties = properties;
     }
@@ -40,7 +40,7 @@ public class DefaultPullConsumer implements PullConsumer {
 
             }
             for (int checkNum=0;checkNum<bucketList.size();checkNum++) {
-              MessageProxy messageProxy= messageStore.pullMessage(queue,bucketList.get(checkNum),properties);
+                MessageProxy messageProxy= messageStore.pullMessage(queue,bucketList.get(checkNum),properties);
                 if(messageProxy==null){
 
                     continue;
@@ -50,8 +50,8 @@ public class DefaultPullConsumer implements PullConsumer {
                     break;
                 }
 
-              //  DefaultBytesMessage message=messageProxy.getDefaultBytesMessage();
-             //   Lock lock=messageProxy.getLock();
+                //  DefaultBytesMessage message=messageProxy.getDefaultBytesMessage();
+                //   Lock lock=messageProxy.getLock();
 
                 /*if(lock!=null){
                     lock.unlock();
@@ -79,7 +79,7 @@ public class DefaultPullConsumer implements PullConsumer {
     @Override public  void attachQueue(String queueName, Collection<String> topics) {
 
         if (queue != null && !queue.equals(queueName)) {
-          return ;
+            return ;
         }
         queue = queueName;
 
