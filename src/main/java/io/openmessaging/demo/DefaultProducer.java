@@ -36,7 +36,7 @@ public class DefaultProducer implements Producer {
         if(atomicBoolean.compareAndSet(true,false)) {
 
 
-            File file = new File(properties.getString("STORE_PATH") + "/" + "Queue");
+            File file = new File(properties.getString("STORE_PATH") + "/" + MessageHeader.QUEUE);
 
             try {
                 file.createNewFile();
@@ -49,11 +49,11 @@ public class DefaultProducer implements Producer {
             }
 
 
-            File file2 = new File(properties.getString("STORE_PATH") + "/" + "Topic");
+            File file2 = new File(properties.getString("STORE_PATH") + "/" + MessageHeader.TOPIC);
 
             try {
                 file2.createNewFile();
-                for (int checkNum = 0; checkNum < 90; checkNum++) {
+                for (int checkNum = 0; checkNum < 100; checkNum++) {
                     File bucketFile = new File(file2.getAbsolutePath() + "/" + "TOPIC_" + checkNum);
                     bucketFile.createNewFile();
                 }

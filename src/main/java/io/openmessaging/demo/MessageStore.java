@@ -331,27 +331,31 @@ public class MessageStore  {
 
 
 
+
     }
+    public void attachInitQueue(String queue,KeyValue properties) {
 
-    public void attachInit(List<String> list,KeyValue properties){
+        String fileLocal = properties.getString("STORE_PATH") + "/" + MessageHeader.QUEUE + "/" + queue;
+        FileChannelProxy fileChannelProxy=new FileChannelProxy();
 
-        for(String bucket:list) {
-            String name = bucket.substring(0, bucket.indexOf("_"));
-            String type = "QUEUE".equals(name) ? MessageHeader.QUEUE : MessageHeader.TOPIC;
-            String fileLocal = properties.getString("STORE_PATH") + "/" + type + "/" + bucket;
-            if("QUEUE".equals(name)){
-                FileChannelProxy fileChannelProxy=new FileChannelProxy();
+        try {
+            FileInputStream fileInputStream=new FileInputStream(fileLocal);
 
-                try {
-                    FileInputStream fileInputStream=new FileInputStream(fileLocal);
+            fileChannelProxy.setFileChannel(fileInputStream.getChannel());
+            fileChannelProxy.setFileInputStream(fileInputStream);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        queueMap.put(queue,fileChannelProxy);
 
-                    fileChannelProxy.setFileChannel(fileInputStream.getChannel());
-                    fileChannelProxy.setFileInputStream(fileInputStream);
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
-                queueMap.put(bucket,fileChannelProxy);
-            }else {
+
+    }
+    public void attachInitTopic(Collection<String> collection,KeyValue properties){
+
+        for(String bucket:collection) {
+
+            String fileLocal = properties.getString("STORE_PATH") + "/" + MessageHeader.TOPIC + "/" + bucket;
+
                 try {
                     if(topicMap.get(bucket)==null){
                         FileChannelProxy fileChannelProxy=new FileChannelProxy();
@@ -360,6 +364,7 @@ public class MessageStore  {
                         fileChannelProxy.setFileInputStream(fileInputStream);
                         Long start=0l;
                         fileChannelProxy.setPosiLtion(start);
+
                         topicMap.put(bucket,fileChannelProxy);
                     }
 
@@ -368,7 +373,7 @@ public class MessageStore  {
                     e.printStackTrace();
                 }
 
-            }
+
         }
     }
 
