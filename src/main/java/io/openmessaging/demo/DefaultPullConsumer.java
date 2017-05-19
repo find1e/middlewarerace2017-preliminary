@@ -34,7 +34,8 @@ public class DefaultPullConsumer implements PullConsumer {
     }
 
     @Override public  Message poll() {
-        while (true){
+        return null;
+       /* while (true){
             if(bucketList.size()==0){
                 return null;
 
@@ -51,18 +52,18 @@ public class DefaultPullConsumer implements PullConsumer {
                 //  DefaultBytesMessage message=messageProxy.getDefaultBytesMessage();
                 //   Lock lock=messageProxy.getLock();
 
-                /*if(lock!=null){
+                *//*if(lock!=null){
                     lock.unlock();
                     return message;
 
-                }*/
+                }*//*
 
                 return messageProxy.getDefaultBytesMessage();
 
             }
 
 
-        }
+        }*/
     }
     @Override public Message poll(KeyValue properties) {
         throw new UnsupportedOperationException("Unsupported");
