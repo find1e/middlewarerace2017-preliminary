@@ -29,6 +29,10 @@ public class DefaultProducer implements Producer {
     private static AtomicBoolean atomicBoolean = new AtomicBoolean(true);
     public DefaultProducer(KeyValue properties) {
         this.properties = properties;
+        init();
+    }
+
+    public synchronized void init(){
         if(atomicBoolean.compareAndSet(true,false)) {
 
 

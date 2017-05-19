@@ -41,10 +41,8 @@ public class DefaultPullConsumer implements PullConsumer {
             }
             for (int checkNum=0;checkNum<bucketList.size();checkNum++) {
                 MessageProxy messageProxy= messageStore.pullMessage(queue,bucketList.get(checkNum),properties);
-                if(messageProxy==null){
 
-                    continue;
-                }
+
                 if(messageProxy.isEnd()){
                     bucketList.remove(checkNum);
                     break;

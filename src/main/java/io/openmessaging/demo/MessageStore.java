@@ -167,7 +167,8 @@ public class MessageStore  {
         FileChannelProxy inputStream = queueMap.get(bucket);
         FileChannel fileChannel = null;
 
-        ByteBuffer preBuff =inputStream.getPreBuff();
+        ByteBuffer preBuff = inputStream.getPreBuff();
+        ByteBuffer buff = null;
         try {
             fileChannel=inputStream.getFileChannel();
 
@@ -195,7 +196,7 @@ public class MessageStore  {
                 len += temp;
             }
             len += lenFlag[1];
-            ByteBuffer buff=inputStream.getByteBuffer();
+            buff=inputStream.getByteBuffer();
             if(inputStream.getBuffSize()!=len){
                 buff = ByteBuffer.allocate(len);
                 inputStream.setByteBuffer(buff);
@@ -208,6 +209,9 @@ public class MessageStore  {
 
             fileChannel.read(buff);
 
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
             DefaultBytesMessage message = new DefaultBytesMessage(buff.array());
             message.putHeaders(MessageHeader.QUEUE, bucket);
             message.putProperties(keyValue);
@@ -215,11 +219,7 @@ public class MessageStore  {
 
             return new MessageProxy(message);
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
-        return null;
     }
 
 
@@ -265,6 +265,7 @@ public class MessageStore  {
         }
 
         ByteBuffer preBuff = fileChannelProxy.getPreBuff();
+        ByteBuffer buff = null;
         try {
 
             FileChannel fileChannel = fileChannelProxy.getFileChannel();
@@ -302,7 +303,7 @@ public class MessageStore  {
                 len += temp;
             }
             len += lenFlag[1];
-            ByteBuffer buff=fileChannelProxy.getByteBuffer();
+           buff=fileChannelProxy.getByteBuffer();
             if(fileChannelProxy.getBuffSize()!=len){
                 buff = ByteBuffer.allocate(len);
                 fileChannelProxy.setByteBuffer(buff);
@@ -317,6 +318,9 @@ public class MessageStore  {
 
             fileChannelProxy.setPosiLtion(fileChannel.position());
 
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
             DefaultBytesMessage message = new DefaultBytesMessage(buff.array());
             message.putHeaders(MessageHeader.TOPIC, bucket);
             message.putProperties(keyValue);
@@ -324,12 +328,9 @@ public class MessageStore  {
             lock.unlock();
             //lock.set(true);
             return new MessageProxy(message);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
 
-        return null;
+
     }
 
     public void attachInit(List<String> list,KeyValue properties){
