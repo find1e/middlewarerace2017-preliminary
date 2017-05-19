@@ -143,8 +143,8 @@ public class DemoTester {
 
         //多线程环境下测试
 
-        thread1.start();
-        thread2.start();
+       // thread1.start();
+       // thread2.start();
     }
 
 }
