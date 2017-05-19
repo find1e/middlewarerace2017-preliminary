@@ -89,7 +89,7 @@ public class DefaultProducer implements Producer {
 
 
     @Override public BytesMessage createBytesMessageToTopic(String topic, byte[] body) {
-/*
+
         if(!hashMap.containsKey(topic)){
             File fileChild = new File(properties.getString("STORE_PATH") +"/"+MessageHeader.TOPIC+"/"+topic);
             try {
@@ -97,7 +97,7 @@ public class DefaultProducer implements Producer {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }*/
+        }
 
         DefaultBytesMessage defaultBytesMessage= (DefaultBytesMessage) messageFactory.createBytesMessageToTopic(topic, body);
         String key= (String) properties.keySet().toArray()[0];
@@ -110,17 +110,17 @@ public class DefaultProducer implements Producer {
     @Override public BytesMessage createBytesMessageToQueue(String queue, byte[] body) {
         DefaultBytesMessage defaultBytesMessage = null;
        if (queue.substring(0, queue.indexOf("_")).equals("QUEUE")) {
-          /*  if (!hashMap.containsKey(queue)) {
+            if (!hashMap.containsKey(queue)) {
                 File fileChild = new File(properties.getString("STORE_PATH") + "/" + MessageHeader.QUEUE + "/" + queue);
                 try {
                     fileChild.createNewFile();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-            }*/
+            }
             defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToQueue(queue, body);
         } else {
-          /*  if (!hashMap.containsKey(queue)) {
+            if (!hashMap.containsKey(queue)) {
                 File fileChild = new File(properties.getString("STORE_PATH") + "/" + MessageHeader.TOPIC + "/" + queue);
                 try {
                     fileChild.createNewFile();
@@ -128,7 +128,7 @@ public class DefaultProducer implements Producer {
                     e.printStackTrace();
                 }
             }
-            */
+            
             defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToTopic(queue, body);
 
 
