@@ -77,17 +77,14 @@ public class DefaultPullConsumer implements PullConsumer {
         throw new UnsupportedOperationException("Unsupported");
     }
     @Override public  void attachQueue(String queueName, Collection<String> topics) {
-
-        if (queue != null && !queue.equals(queueName)) {
-            return ;
-        }
         queue = queueName;
 
         buckets.addAll(topics);
         buckets.add(queueName);
         bucketList.clear();
         bucketList.addAll(buckets);
-        messageStore.attachInit(bucketList,properties);
+        messageStore.attachInitTopic(topics,properties);
+        messageStore.attachInitQueue(queueName,properties);
 
 
     }

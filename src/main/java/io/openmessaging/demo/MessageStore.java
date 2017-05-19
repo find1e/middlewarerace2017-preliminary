@@ -228,9 +228,7 @@ public class MessageStore  {
             fileChannel=inputStream.getFileChannel();
 
             if (fileChannel.read(preBuff) == -1) {
-                System.out.println("@" + bucket + "over");
-
-
+             
                 fileChannel.close();
 
                 inputStream.getFileInputStream().close();
@@ -317,14 +315,12 @@ public class MessageStore  {
         try {
 
             FileChannel fileChannel = fileChannelProxy.getFileChannel();
-            // System.out.println(fileChannel);
-            //  System.out.println("fileChannel:"+fileChannel);
-            // System.out.println("fileChannelProxy"+fileChannelProxy);
+
             fileChannel.position(fileChannelProxy.getPosition());
             //  System.out.println(fileChannelProxy.getPosition());
             if (fileChannel.read(preBuff) == -1) {
 
-                System.out.println("@" + bucket + "over");
+
 
 
                 fileChannel.close();
@@ -374,42 +370,47 @@ public class MessageStore  {
         return null;
     }
 
-    public void attachInit(List<String> list,KeyValue properties){
+    public void attachInitQueue(String queue,KeyValue properties) {
 
-        for(String bucket:list) {
-            String name = bucket.substring(0, bucket.indexOf("_"));
-            String type = "QUEUE".equals(name) ? MessageHeader.QUEUE : MessageHeader.TOPIC;
-            String fileLocal = properties.getString("STORE_PATH") + "/" + type + "/" + bucket;
-            if("QUEUE".equals(name)){
-                FileChannelProxy fileChannelProxy=new FileChannelProxy();
+        String fileLocal = properties.getString("STORE_PATH") + "/" + MessageHeader.QUEUE + "/" + queue;
+        FileChannelProxy fileChannelProxy=new FileChannelProxy();
 
-                try {
-                    FileInputStream fileInputStream=new FileInputStream(fileLocal);
+        try {
+            FileInputStream fileInputStream=new FileInputStream(fileLocal);
 
+            fileChannelProxy.setFileChannel(fileInputStream.getChannel());
+            fileChannelProxy.setFileInputStream(fileInputStream);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        queueMap.put(queue,fileChannelProxy);
+
+
+    }
+    public void attachInitTopic(Collection<String> collection,KeyValue properties){
+
+        for(String bucket:collection) {
+
+            String fileLocal = properties.getString("STORE_PATH") + "/" + MessageHeader.TOPIC + "/" + bucket;
+
+            try {
+                if(topicMap.get(bucket)==null){
+                    FileChannelProxy fileChannelProxy=new FileChannelProxy();
+                    FileInputStream fileInputStream = new FileInputStream(fileLocal);
                     fileChannelProxy.setFileChannel(fileInputStream.getChannel());
                     fileChannelProxy.setFileInputStream(fileInputStream);
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
-                queueMap.put(bucket,fileChannelProxy);
-            }else {
-                try {
-                    if(topicMap.get(bucket)==null){
-                        FileChannelProxy fileChannelProxy=new FileChannelProxy();
-                        FileInputStream fileInputStream = new FileInputStream(fileLocal);
-                        fileChannelProxy.setFileChannel(fileInputStream.getChannel());
-                        fileChannelProxy.setFileInputStream(fileInputStream);
-                        Long start=0l;
-                        fileChannelProxy.setPosiLtion(start);
-                        topicMap.put(bucket,fileChannelProxy);
-                    }
+                    Long start=0l;
+                    fileChannelProxy.setPosiLtion(start);
 
-
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
+                    topicMap.put(bucket,fileChannelProxy);
                 }
 
+
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
             }
+
+
         }
     }
 
