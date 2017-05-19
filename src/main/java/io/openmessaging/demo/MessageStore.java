@@ -34,16 +34,30 @@ public class MessageStore  {
         return INSTANCE;
     }
 
+    //private Map<String, ArrayList<Message>> messageBuckets = new HashMap<>();
+
+   // private Map<String, HashMap<String, Integer>> queueOffsets = new HashMap<>();
+
+   // private Lock lockFile = new ReentrantLock();
+
+    //private Lock lockGet=new ReentrantLock();
+
+    //private Lock lockRead=new ReentrantLock();
+
     private HashMap<String,FileChannelProxy> queueMap = new HashMap(20);
 
     private HashMap<String,FileChannelProxy> topicMap = new HashMap(120);
+
+    //private DistributeLock sendLock=new DistributeLock(120);
+
+    //final ThreadLocal threadLocal=new ThreadLocal();
 
     private HashMap<String,FileChannelProxy> sendMap;
 
 
 
 
-    public  void putMessage( Message message, KeyValue properties) throws IOException {
+    public synchronized void putMessage( Message message, KeyValue properties) throws IOException {
 
         if (message == null) return ;
 
@@ -75,45 +89,87 @@ public class MessageStore  {
         };
         while((fileChannelProxy=sendLock.lock(bucket,callBack))==null);*/
         FileChannelProxy fileChannelProxy=sendMap.get(bucket);
-        FileChannel fileChannel=fileChannelProxy.getFileChannel();
+
 
         DefaultBytesMessage defaultBytesMessage = (DefaultBytesMessage) message;
         byte[] body=defaultBytesMessage.getBody();
         int length=body.length;
-        ReentrantLock lock= (ReentrantLock) fileChannelProxy.getLock();
-        lock.lock();
+        //ByteBuffer byteBuffer = ByteBuffer.allocate(length + 2);
 
-                ByteBuffer byteBuffer=fileChannelProxy.getByteBuffer();
+        AtomicBoolean atomicBooleanWrite=fileChannelProxy.runThread.getAtomicBooleanWrite();
+       /* while(!atomicBooleanWrite.compareAndSet(true,false)){
+           System.out.println("正在io。。。");
 
-        if(fileChannelProxy.getBuffSize()!=(length+2)){
-             byteBuffer= ByteBuffer.allocate(length + 2);
-            fileChannelProxy.setByteBuffer(byteBuffer);
-            fileChannelProxy.setBuffSize(length+2);
 
-        }else{
-            byteBuffer.clear();
+        }*/
+        int num=fileChannelProxy.runThread.getIsFirst()&1;
+        try {
+            //long start=System.currentTimeMillis();
+
+            fileChannelProxy.runThread.getSemaphoresWrites()[num].acquire();
+
+           // long end=System.currentTimeMillis();
+           // System.out.println("等待io cust:"+(start-end));
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        // fileChannelProxy.runThread.getLock().lock();
+//        try {
+//            fileChannelProxy.runThread.getSignal().await();
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+       // System.out.println("io结束");
+    //    ByteBuffer byteBuffer=fileChannelProxy.runThread.getByteBuffer();
+        ByteBuffer[] byteBuffers=fileChannelProxy.runThread.getByteBuffers();
+
+        ByteBuffer byteBuffer=byteBuffers[num];
+        //调整buff大小
+        if( fileChannelProxy.runThread.getBuffSizes()[num]!=(length+2)){
+
+            byteBuffer=ByteBuffer.allocateDirect(length+2);
+            fileChannelProxy.runThread.getByteBuffers()[num]=(byteBuffer);
+            fileChannelProxy.runThread.getBuffSizes()[num]=(length+2);
         }
 
 
-        int i=0;//i��ʾ1�ֽڿ��Ա�ʾ�����ִ�С��
+       // int i=0;//i��ʾ1�ֽڿ��Ա�ʾ�����ִ�С��
         int j=0;//j��ʾ�������ٸ��ֽ�
         byte[] lenFlag=new byte[2];
         if(length>255){
             j=length/255;
         }
-        i=length;
+
         lenFlag[0]= (byte) j;
-        lenFlag[1]= (byte) i;
+        lenFlag[1]= (byte) length;
+
+
+        byteBuffer.clear();
         byteBuffer.put(lenFlag);
         byteBuffer.put(defaultBytesMessage.getBody());
 
         byteBuffer.flip();
 
-        while (byteBuffer.hasRemaining()) {
-            fileChannel.write(byteBuffer);
-        }
-        lock.unlock();
+      //  System.out.println("123");
+       // AtomicBoolean atomicBooleanRead=fileChannelProxy.runThread.getAtomicBooleanRead();
+        //atomicBooleanRead.set(true);
+       // fileChannelProxy.runThread.getSignal().signal();
+        //fileChannelProxy.getLock().unlock();
+        if(fileChannelProxy.runThread.getIsFirst()==0){
+            fileChannelProxy.runThread.add();
+            return ;
 
+        }
+        if(fileChannelProxy.runThread.getIsFirst()==1){
+            fileChannelProxy.runThread.add();
+            fileChannelProxy.run();
+            return;
+
+        }
+
+        fileChannelProxy.runThread.getSemaphoresReads()[num].release();
+        fileChannelProxy.runThread.add();
     }
 
     public static void main(String[] args) throws FileNotFoundException, IOException {
@@ -125,7 +181,7 @@ public class MessageStore  {
         fileChannel.read(byteBuffer);
 
         byte[] b=byteBuffer.array();
-        System.out.println(Arrays.toString(b));
+       // System.out.println(Arrays.toString(b));
 
         FileChannel fileChannel2=fileInputStream.getChannel();
         ByteBuffer byteBuffer2=ByteBuffer.allocate(5);
@@ -167,13 +223,12 @@ public class MessageStore  {
         FileChannelProxy inputStream = queueMap.get(bucket);
         FileChannel fileChannel = null;
 
-        ByteBuffer preBuff = inputStream.getPreBuff();
-        ByteBuffer buff = null;
+        ByteBuffer preBuff = ByteBuffer.allocate(2);
         try {
             fileChannel=inputStream.getFileChannel();
 
             if (fileChannel.read(preBuff) == -1) {
-              //  System.out.println("@" + bucket + "over");
+                System.out.println("@" + bucket + "over");
 
 
                 fileChannel.close();
@@ -196,22 +251,12 @@ public class MessageStore  {
                 len += temp;
             }
             len += lenFlag[1];
-            buff=inputStream.getByteBuffer();
-            if(inputStream.getBuffSize()!=len){
-                buff = ByteBuffer.allocate(len);
-                inputStream.setByteBuffer(buff);
-                inputStream.setBuffSize(len);
-            }else{
-                buff.clear();
-            }
 
+            ByteBuffer buff = ByteBuffer.allocate(len);
             //System.out.println("����"+len);
 
             fileChannel.read(buff);
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
             DefaultBytesMessage message = new DefaultBytesMessage(buff.array());
             message.putHeaders(MessageHeader.QUEUE, bucket);
             message.putProperties(keyValue);
@@ -219,7 +264,11 @@ public class MessageStore  {
 
             return new MessageProxy(message);
 
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
+        return null;
     }
 
 
@@ -264,8 +313,7 @@ public class MessageStore  {
             return messageProxy;
         }
 
-        ByteBuffer preBuff = fileChannelProxy.getPreBuff();
-        ByteBuffer buff = null;
+        ByteBuffer preBuff = ByteBuffer.allocate(2);
         try {
 
             FileChannel fileChannel = fileChannelProxy.getFileChannel();
@@ -276,7 +324,7 @@ public class MessageStore  {
             //  System.out.println(fileChannelProxy.getPosition());
             if (fileChannel.read(preBuff) == -1) {
 
-              //  System.out.println("@" + bucket + "over");
+                System.out.println("@" + bucket + "over");
 
 
                 fileChannel.close();
@@ -303,24 +351,14 @@ public class MessageStore  {
                 len += temp;
             }
             len += lenFlag[1];
-           buff=fileChannelProxy.getByteBuffer();
-            if(fileChannelProxy.getBuffSize()!=len){
-                buff = ByteBuffer.allocate(len);
-                fileChannelProxy.setByteBuffer(buff);
-                fileChannelProxy.setBuffSize(len);
-            }else{
-                buff.clear();
-            }
 
+            ByteBuffer buff = ByteBuffer.allocate(len);
             //System.out.println("����"+len);
 
             fileChannel.read(buff);
 
             fileChannelProxy.setPosiLtion(fileChannel.position());
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
             DefaultBytesMessage message = new DefaultBytesMessage(buff.array());
             message.putHeaders(MessageHeader.TOPIC, bucket);
             message.putProperties(keyValue);
@@ -328,34 +366,33 @@ public class MessageStore  {
             lock.unlock();
             //lock.set(true);
             return new MessageProxy(message);
-
-
-
-
-    }
-    public void attachInitQueue(String queue,KeyValue properties) {
-
-        String fileLocal = properties.getString("STORE_PATH") + "/" + MessageHeader.QUEUE + "/" + queue;
-        FileChannelProxy fileChannelProxy=new FileChannelProxy();
-
-        try {
-            FileInputStream fileInputStream=new FileInputStream(fileLocal);
-
-            fileChannelProxy.setFileChannel(fileInputStream.getChannel());
-            fileChannelProxy.setFileInputStream(fileInputStream);
-        } catch (FileNotFoundException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
-        queueMap.put(queue,fileChannelProxy);
 
 
+        return null;
     }
-    public void attachInitTopic(Collection<String> collection,KeyValue properties){
 
-        for(String bucket:collection) {
+    public void attachInit(List<String> list,KeyValue properties){
 
-            String fileLocal = properties.getString("STORE_PATH") + "/" + MessageHeader.TOPIC + "/" + bucket;
+        for(String bucket:list) {
+            String name = bucket.substring(0, bucket.indexOf("_"));
+            String type = "QUEUE".equals(name) ? MessageHeader.QUEUE : MessageHeader.TOPIC;
+            String fileLocal = properties.getString("STORE_PATH") + "/" + type + "/" + bucket;
+            if("QUEUE".equals(name)){
+                FileChannelProxy fileChannelProxy=new FileChannelProxy();
 
+                try {
+                    FileInputStream fileInputStream=new FileInputStream(fileLocal);
+
+                    fileChannelProxy.setFileChannel(fileInputStream.getChannel());
+                    fileChannelProxy.setFileInputStream(fileInputStream);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+                queueMap.put(bucket,fileChannelProxy);
+            }else {
                 try {
                     if(topicMap.get(bucket)==null){
                         FileChannelProxy fileChannelProxy=new FileChannelProxy();
@@ -364,7 +401,6 @@ public class MessageStore  {
                         fileChannelProxy.setFileInputStream(fileInputStream);
                         Long start=0l;
                         fileChannelProxy.setPosiLtion(start);
-
                         topicMap.put(bucket,fileChannelProxy);
                     }
 
@@ -373,7 +409,7 @@ public class MessageStore  {
                     e.printStackTrace();
                 }
 
-
+            }
         }
     }
 

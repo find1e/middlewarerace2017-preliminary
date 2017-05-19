@@ -17,7 +17,7 @@ public class DemoTester {
         //ʵ�ʲ���ʱ���� STORE_PATH ����洢·��
         //����producer��consumer��STORE_PATH����һ���ģ�ѡ�ֿ��������ڸ�·���´����ļ�
          */
-        properties.put("STORE_PATH", "/home/fbhw/race");
+        properties.put("STORE_PATH", "D:\\race");
         // properties.put("STORE_PATH", "/home/admin/test");
         // properties.put("STORE_PATH", "/storage/sdcard0/AppProjects/alinative")
         //
@@ -143,8 +143,8 @@ public class DemoTester {
 
         //多线程环境下测试
 
-       // thread1.start();
-       // thread2.start();
+        thread1.start();
+        thread2.start();
     }
 
 }
