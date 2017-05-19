@@ -28,9 +28,9 @@ public class DefaultProducer implements Producer {
     private HashMap hashMap=new HashMap();
     private static AtomicBoolean atomicBoolean = new AtomicBoolean(true);
     public DefaultProducer(KeyValue properties) {
-
+        this.properties = properties;
         if(atomicBoolean.compareAndSet(true,false)) {
-            this.properties = properties;
+
 
             File file = new File(properties.getString("STORE_PATH") + "/" + "Queue");
 
@@ -113,17 +113,17 @@ public class DefaultProducer implements Producer {
     @Override public BytesMessage createBytesMessageToQueue(String queue, byte[] body) {
         DefaultBytesMessage defaultBytesMessage = null;
        if (queue.substring(0, queue.indexOf("_")).equals("QUEUE")) {
-            if (!hashMap.containsKey(queue)) {
+         /*   if (!hashMap.containsKey(queue)) {
                 File fileChild = new File(properties.getString("STORE_PATH") + "/" + MessageHeader.QUEUE + "/" + queue);
                 try {
                     fileChild.createNewFile();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-            }
+            }*/
             defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToQueue(queue, body);
         } else {
-            if (!hashMap.containsKey(queue)) {
+          /*  if (!hashMap.containsKey(queue)) {
                 File fileChild = new File(properties.getString("STORE_PATH") + "/" + MessageHeader.TOPIC + "/" + queue);
                 try {
                     fileChild.createNewFile();
@@ -131,7 +131,7 @@ public class DefaultProducer implements Producer {
                     e.printStackTrace();
                 }
             }
-            
+            */
             defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToTopic(queue, body);
 
 
