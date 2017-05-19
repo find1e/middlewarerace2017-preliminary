@@ -19,22 +19,25 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DefaultProducer implements Producer {
     private MessageFactory messageFactory = new DefaultMessageFactory();
     private MessageStore messageStore = MessageStore.getInstance();
     private KeyValue properties;
     private HashMap hashMap=new HashMap();
+    private static AtomicBoolean atomicBoolean = new AtomicBoolean(true);
     public DefaultProducer(KeyValue properties) {
 
-        this.properties = properties;
+        if(atomicBoolean.compareAndSet(true,false)) {
+            this.properties = properties;
 
             File file = new File(properties.getString("STORE_PATH") + "/" + "Queue");
 
             try {
                 file.createNewFile();
-                for(int checkNum=0;checkNum<20;checkNum++){
-                    File bucketFile=new File(file.getAbsolutePath()+"/"+"QUEUE_"+checkNum);
+                for (int checkNum = 0; checkNum < 20; checkNum++) {
+                    File bucketFile = new File(file.getAbsolutePath() + "/" + "QUEUE_" + checkNum);
                     bucketFile.createNewFile();
                 }
             } catch (IOException e) {
@@ -42,47 +45,47 @@ public class DefaultProducer implements Producer {
             }
 
 
-        File file2 = new File(properties.getString("STORE_PATH") + "/" + "Topic");
+            File file2 = new File(properties.getString("STORE_PATH") + "/" + "Topic");
 
-        try {
-            file2.createNewFile();
-            for(int checkNum=0;checkNum<90;checkNum++){
-                File bucketFile=new File(file2.getAbsolutePath()+"/"+"TOPIC_"+checkNum);
-                bucketFile.createNewFile();
+            try {
+                file2.createNewFile();
+                for (int checkNum = 0; checkNum < 90; checkNum++) {
+                    File bucketFile = new File(file2.getAbsolutePath() + "/" + "TOPIC_" + checkNum);
+                    bucketFile.createNewFile();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
 
+            if (messageStore.getSendMap() == null) {
 
-        if(messageStore.getSendMap()==null){
+                messageStore.setSendMap(new HashMap(120));
+                File file3 = new File(properties.getString("STORE_PATH"));
 
-            messageStore.setSendMap(new HashMap(120));
-            File file3=new File(properties.getString("STORE_PATH"));
+                File[] files = file3.listFiles();
+                for (File f : files) {
+                    String[] fileNames = f.list();
+                    for (String fileName : fileNames) {
+                        FileChannelProxy fileChannelProxy = new FileChannelProxy();
+                        FileOutputStream fileOutputStream = null;
+                        try {
+                            fileOutputStream = new FileOutputStream(f.getAbsolutePath() + "/" + fileName);
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                        FileChannel fileChannel = fileOutputStream.getChannel();
+                        fileChannelProxy.setFileChannel(fileChannel);
+                        fileChannelProxy.setFileOutputStream(fileOutputStream);
 
-            File[] files=file3.listFiles();
-            for(File f:files){
-                String[] fileNames=f.list();
-                for(String fileName:fileNames){
-                    FileChannelProxy fileChannelProxy=new FileChannelProxy();
-                    FileOutputStream fileOutputStream=null;
-                    try {
-                        fileOutputStream=new FileOutputStream(f.getAbsolutePath()+"/"+fileName);
-                    } catch (FileNotFoundException e) {
-                        e.printStackTrace();
+                        HashMap sendMap = messageStore.getSendMap();
+                        sendMap.put(fileName, fileChannelProxy);
+
                     }
-                    FileChannel fileChannel=fileOutputStream.getChannel();
-                    fileChannelProxy.setFileChannel(fileChannel);
-                    fileChannelProxy.setFileOutputStream(fileOutputStream);
-
-                    HashMap sendMap=messageStore.getSendMap();
-                    sendMap.put(fileName,fileChannelProxy);
 
                 }
 
             }
-
         }
 
     }
