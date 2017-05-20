@@ -71,13 +71,13 @@ public class DefaultProducer implements Producer {
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
                     }
-
-                    FileChannel fileChannel=fileOutputStream.getChannel();
-                    fileChannelProxy.runThread.setFileChannel(fileChannel);
+                    FileChannel fileChannel = fileOutputStream.getChannel();
+                    fileChannelProxy.setFileChannel(fileChannel);
                     fileChannelProxy.setFileOutputStream(fileOutputStream);
+                    fileChannelProxy.runThread.setFileChannel(fileChannel);
 
-                    HashMap sendMap=messageStore.getSendMap();
-                    sendMap.put(l.getName(),fileChannelProxy);
+                    HashMap sendMap = messageStore.getSendMap();
+                    sendMap.put(l.getName(), fileChannelProxy);
 
                 }
 
@@ -85,6 +85,7 @@ public class DefaultProducer implements Producer {
 
         }
     }
+
 
 
 
