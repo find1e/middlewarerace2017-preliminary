@@ -29,7 +29,7 @@ public class DefaultProducer implements Producer {
     private static AtomicBoolean atomicBoolean = new AtomicBoolean(true);
     public DefaultProducer(KeyValue properties) {
         this.properties = properties;
-        init();
+
     }
 
     public void init(){
@@ -115,6 +115,7 @@ public class DefaultProducer implements Producer {
     }
 
     @Override public BytesMessage createBytesMessageToQueue(String queue, byte[] body) {
+        init();
         DefaultBytesMessage defaultBytesMessage = null;
        if (queue.substring(0, queue.indexOf("_")).equals("QUEUE")) {
          /*   if (!hashMap.containsKey(queue)) {
