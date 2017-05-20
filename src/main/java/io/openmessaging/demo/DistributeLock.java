@@ -31,31 +31,31 @@ class DistributeLock  {
             return null;
         }
         FileChannelProxy fileChannelProxy=null;
-     Node node=get(bucked);
+        Node node=get(bucked);
 
 
         if(node==null){
 
             fileChannelProxy=callBack.callBack();
-           node=put(bucked,fileChannelProxy);
+            node=put(bucked,fileChannelProxy);
         }
-
-         fileChannelProxy=node.getValue();
-
-        AtomicBoolean lock=fileChannelProxy.getLock();
-        while(!lock.compareAndSet(true, false));
         atomic.set(true);
+        fileChannelProxy=node.getValue();
+
+        AtomicBoolean lock= (AtomicBoolean) fileChannelProxy.getLock();
+        while(!lock.compareAndSet(true,false));
+
         return fileChannelProxy;
     }
 
     public void unLock(FileChannelProxy fileChannelProxy){
-       AtomicBoolean lock=fileChannelProxy.getLock();
+        AtomicBoolean lock= (AtomicBoolean) fileChannelProxy.getLock();
         lock.set(true);
     }
 
     public   Node put(String key,FileChannelProxy fileChannelProxy) {
 
-        int hash=size-1 & hash(key);
+        int hash=size & hash(key);
         Node node = new Node(key,fileChannelProxy, true);
         if(nodes[hash]==null){
             nodes[hash]=node;
@@ -67,8 +67,8 @@ class DistributeLock  {
         while ((temp=preNode.getNext())!=null) {
             preNode=temp;
             if (key.equals(temp.getKey())) {
-               temp.setValue(fileChannelProxy);
-               return node;
+                temp.setValue(fileChannelProxy);
+                return node;
             }
 
         }
@@ -83,7 +83,7 @@ class DistributeLock  {
     }
     public Node get(String key) {
 
-        Node local = nodes[size - 1 & hash(key)];
+        Node local = nodes[size & hash(key)];
         if (local == null) {
             return null;
         }
@@ -96,18 +96,28 @@ class DistributeLock  {
             if (key.equals(node.getKey())) {
                 return node;
             }
-            }
+        }
         return null;
     }
 
     public static void main(String[] args) {
-        DistributeLock distributeLock=new DistributeLock(120);
+        DistributeLock distributeLock=new DistributeLock(200);
+        distributeLock.put("hujunqiu",new FileChannelProxy());
+        distributeLock.put("hujunqia",new FileChannelProxy());
+        distributeLock.put("hujunqiw",new FileChannelProxy());
+        distributeLock.put("hujunqie",new FileChannelProxy());
+        distributeLock.put("hujunqir",new FileChannelProxy());
+        System.out.println(distributeLock.get("hujunqiu"));
+        System.out.println(distributeLock.get("hujunqia"));
+        System.out.println(distributeLock.get("hujunqiw"));
+        System.out.println(distributeLock.get("hujunqie"));
+        System.out.println(distributeLock.get("hujunqir"));
 
-        System.out.println(120 - 1 & hash("hujunqiu"));
-        System.out.println(120 - 1 & hash("hujunqia"));
-        System.out.println(120 - 1 & hash("hujunqiw"));
-        System.out.println(120 - 1 & hash("hujunqie"));
-        System.out.println(120 - 1 & hash("hujunqir"));
+        System.out.println(200 & hash("hujunqiu"));
+        System.out.println(200 & hash("hujunqia"));
+        System.out.println(200 & hash("hujunqiw"));
+        System.out.println(200 & hash("hujunqie"));
+        System.out.println(200 & hash("hujunqir"));
 
 
     }

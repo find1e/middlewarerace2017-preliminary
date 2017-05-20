@@ -19,15 +19,79 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DefaultProducer implements Producer {
     private MessageFactory messageFactory = new DefaultMessageFactory();
     private MessageStore messageStore = MessageStore.getInstance();
     private KeyValue properties;
     private HashMap hashMap=new HashMap();
+    private static AtomicBoolean atomicBoolean = new AtomicBoolean(true);
     public DefaultProducer(KeyValue properties) {
-
         this.properties = properties;
+        init();
+    }
+
+    public synchronized void init(){
+        if(atomicBoolean.compareAndSet(true,false)) {
+
+
+            File file = new File(properties.getString("STORE_PATH") + "/" + MessageHeader.QUEUE);
+
+            try {
+                file.createNewFile();
+                for (int checkNum = 0; checkNum < 20; checkNum++) {
+                    File bucketFile = new File(file.getAbsolutePath() + "/" + "QUEUE_" + checkNum);
+                    bucketFile.createNewFile();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+            File file2 = new File(properties.getString("STORE_PATH") + "/" + MessageHeader.TOPIC);
+
+            try {
+                file2.createNewFile();
+                for (int checkNum = 0; checkNum < 100; checkNum++) {
+                    File bucketFile = new File(file2.getAbsolutePath() + "/" + "TOPIC_" + checkNum);
+                    bucketFile.createNewFile();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+            if (messageStore.getSendMap() == null) {
+
+                messageStore.setSendMap(new HashMap(140));
+                File file3 = new File(properties.getString("STORE_PATH"));
+
+                File[] files = file3.listFiles();
+                for (File f : files) {
+                    String[] fileNames = f.list();
+                    for (String fileName : fileNames) {
+                        FileChannelProxy fileChannelProxy = new FileChannelProxy();
+                        FileOutputStream fileOutputStream = null;
+                        try {
+                            fileOutputStream = new FileOutputStream(f.getAbsolutePath() + "/" + fileName);
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                        FileChannel fileChannel = fileOutputStream.getChannel();
+                        fileChannelProxy.setFileChannel(fileChannel);
+                        fileChannelProxy.setFileOutputStream(fileOutputStream);
+
+                        HashMap sendMap = messageStore.getSendMap();
+                        sendMap.put(fileName, fileChannelProxy);
+
+                    }
+
+                }
+
+            }
+        }
+
     }
 
 
@@ -45,25 +109,25 @@ public class DefaultProducer implements Producer {
         DefaultBytesMessage defaultBytesMessage= (DefaultBytesMessage) messageFactory.createBytesMessageToTopic(topic, body);
         String key= (String) properties.keySet().toArray()[0];
 
-       defaultBytesMessage.putProperties(key,properties.getString(key));
+        defaultBytesMessage.putProperties(key,properties.getString(key));
         return defaultBytesMessage;
 
     }
 
     @Override public BytesMessage createBytesMessageToQueue(String queue, byte[] body) {
-        DefaultBytesMessage defaultBytesMessage=null;
-        if(queue.substring(0,queue.indexOf("_")).equals("QUEUE")) {
-            if (!hashMap.containsKey(queue)) {
+        DefaultBytesMessage defaultBytesMessage = null;
+       if (queue.substring(0, queue.indexOf("_")).equals("QUEUE")) {
+         /*   if (!hashMap.containsKey(queue)) {
                 File fileChild = new File(properties.getString("STORE_PATH") + "/" + MessageHeader.QUEUE + "/" + queue);
                 try {
                     fileChild.createNewFile();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-            }
-           defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToQueue(queue, body);
-        }else{
-            if (!hashMap.containsKey(queue)) {
+            }*/
+            defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToQueue(queue, body);
+        } else {
+          /*  if (!hashMap.containsKey(queue)) {
                 File fileChild = new File(properties.getString("STORE_PATH") + "/" + MessageHeader.TOPIC + "/" + queue);
                 try {
                     fileChild.createNewFile();
@@ -71,10 +135,12 @@ public class DefaultProducer implements Producer {
                     e.printStackTrace();
                 }
             }
+            */
             defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToTopic(queue, body);
 
 
         }
+
         String key= (String) properties.keySet().toArray()[0];
 
         defaultBytesMessage.putProperties(key,properties.getString(key));
