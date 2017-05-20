@@ -57,34 +57,34 @@ public class DefaultProducer implements Producer {
 
 
 
-                messageStore.setSendMap(new HashMap(140));
-                File file3 = new File(properties.getString("STORE_PATH"));
+            messageStore.setSendMap(new HashMap(140));
+            File file3 = new File(properties.getString("STORE_PATH"));
 
-                File[] files = file3.listFiles();
-                for (File f : files) {
-                    File[] fl = f.listFiles();
-                    for (File l : fl) {
-                        FileChannelProxy fileChannelProxy = new FileChannelProxy();
-                        FileOutputStream fileOutputStream = null;
-                        try {
-                            fileOutputStream = new FileOutputStream(f.getAbsolutePath() + "/" + l.getName());
-                        } catch (FileNotFoundException e) {
-                            e.printStackTrace();
-                        }
-                        FileChannel fileChannel = fileOutputStream.getChannel();
-                        fileChannelProxy.setFileChannel(fileChannel);
-                        fileChannelProxy.setFileOutputStream(fileOutputStream);
-
-                        HashMap sendMap = messageStore.getSendMap();
-                        sendMap.put(l.getName(), fileChannelProxy);
-
+            File[] files = file3.listFiles();
+            for (File f : files) {
+                File[] fl = f.listFiles();
+                for (File l : fl) {
+                    FileChannelProxy fileChannelProxy = new FileChannelProxy();
+                    FileOutputStream fileOutputStream = null;
+                    try {
+                        fileOutputStream = new FileOutputStream(f.getAbsolutePath() + "/" + l.getName());
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
                     }
+
+                    FileChannel fileChannel=fileOutputStream.getChannel();
+                    fileChannelProxy.runThread.setFileChannel(fileChannel);
+                    fileChannelProxy.setFileOutputStream(fileOutputStream);
+
+                    HashMap sendMap=messageStore.getSendMap();
+                    sendMap.put(l.getName(),fileChannelProxy);
 
                 }
 
             }
-        }
 
+        }
+    }
 
 
 
@@ -110,7 +110,7 @@ public class DefaultProducer implements Producer {
     @Override public BytesMessage createBytesMessageToQueue(String queue, byte[] body) {
 
         DefaultBytesMessage defaultBytesMessage = null;
-       if (queue.substring(0, queue.indexOf("_")).equals("QUEUE")) {
+        if (queue.substring(0, queue.indexOf("_")).equals("QUEUE")) {
          /*   if (!hashMap.containsKey(queue)) {
                 File fileChild = new File(properties.getString("STORE_PATH") + "/" + MessageHeader.QUEUE + "/" + queue);
                 try {
