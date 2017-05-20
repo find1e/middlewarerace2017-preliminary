@@ -40,6 +40,8 @@ public class MessageStore  {
 
     private HashMap<String,FileChannelProxy> sendMap;
 
+    public static  final  AtomicBoolean atomicBoolean = new AtomicBoolean(true);
+
 
 
 
@@ -82,8 +84,7 @@ public class MessageStore  {
         int length=body.length;
         ReentrantLock lock= (ReentrantLock) fileChannelProxy.getLock();
         lock.lock();
-
-                ByteBuffer byteBuffer=fileChannelProxy.getByteBuffer();
+        ByteBuffer byteBuffer=fileChannelProxy.getByteBuffer();
 
         if(fileChannelProxy.getBuffSize()!=(length+2)){
              byteBuffer= ByteBuffer.allocate(length + 2);

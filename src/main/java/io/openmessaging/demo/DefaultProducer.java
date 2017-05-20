@@ -19,14 +19,14 @@ public class DefaultProducer implements Producer {
     private MessageStore messageStore = MessageStore.getInstance();
     private KeyValue properties;
     private HashMap hashMap=new HashMap();
-    private static AtomicBoolean atomicBoolean = new AtomicBoolean(true);
+
     public DefaultProducer(KeyValue properties) {
         this.properties = properties;
         init();
     }
 
     public void init(){
-        if(atomicBoolean.compareAndSet(true,false)) {
+        if(MessageStore.atomicBoolean.compareAndSet(true,false)) {
 
 
             File file = new File(properties.getString("STORE_PATH") + "/" + MessageHeader.QUEUE);
@@ -62,12 +62,12 @@ public class DefaultProducer implements Producer {
 
                 File[] files = file3.listFiles();
                 for (File f : files) {
-                    String[] fileNames = f.list();
-                    for (String fileName : fileNames) {
+                    File[] fl = f.listFiles();
+                    for (File l : fl) {
                         FileChannelProxy fileChannelProxy = new FileChannelProxy();
                         FileOutputStream fileOutputStream = null;
                         try {
-                            fileOutputStream = new FileOutputStream(f.getAbsolutePath() + "/" + fileName);
+                            fileOutputStream = new FileOutputStream(f.getAbsolutePath() + "/" + l.getName());
                         } catch (FileNotFoundException e) {
                             e.printStackTrace();
                         }
@@ -76,7 +76,7 @@ public class DefaultProducer implements Producer {
                         fileChannelProxy.setFileOutputStream(fileOutputStream);
 
                         HashMap sendMap = messageStore.getSendMap();
-                        sendMap.put(fileName, fileChannelProxy);
+                        sendMap.put(l.getName(), fileChannelProxy);
 
                     }
 
