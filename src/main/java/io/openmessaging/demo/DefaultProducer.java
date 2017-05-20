@@ -32,14 +32,14 @@ public class DefaultProducer implements Producer {
         init();
     }
 
-    public synchronized void init(){
+    public void init(){
         if(atomicBoolean.compareAndSet(true,false)) {
 
 
             File file = new File(properties.getString("STORE_PATH") + "/" + MessageHeader.QUEUE);
 
             try {
-                file.createNewFile();
+                file.mkdir();
                 for (int checkNum = 0; checkNum < 20; checkNum++) {
                     File bucketFile = new File(file.getAbsolutePath() + "/" + "QUEUE_" + checkNum);
                     bucketFile.createNewFile();
@@ -52,7 +52,7 @@ public class DefaultProducer implements Producer {
             File file2 = new File(properties.getString("STORE_PATH") + "/" + MessageHeader.TOPIC);
 
             try {
-                file2.createNewFile();
+                file2.mkdir();
                 for (int checkNum = 0; checkNum < 100; checkNum++) {
                     File bucketFile = new File(file2.getAbsolutePath() + "/" + "TOPIC_" + checkNum);
                     bucketFile.createNewFile();
