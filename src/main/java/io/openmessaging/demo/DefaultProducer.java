@@ -1,23 +1,16 @@
 
 package io.openmessaging.demo;
-
-
 import io.openmessaging.BytesMessage;
 import io.openmessaging.KeyValue;
 import io.openmessaging.Message;
 import io.openmessaging.MessageFactory;
 import io.openmessaging.MessageHeader;
 import io.openmessaging.Producer;
-
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.Buffer;
-import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -29,7 +22,7 @@ public class DefaultProducer implements Producer {
     private static AtomicBoolean atomicBoolean = new AtomicBoolean(true);
     public DefaultProducer(KeyValue properties) {
         this.properties = properties;
-
+        init();
     }
 
     public void init(){
@@ -62,7 +55,7 @@ public class DefaultProducer implements Producer {
             }
 
 
-            if (messageStore.getSendMap() == null) {
+
 
                 messageStore.setSendMap(new HashMap(140));
                 File file3 = new File(properties.getString("STORE_PATH"));
@@ -92,7 +85,7 @@ public class DefaultProducer implements Producer {
             }
         }
 
-    }
+
 
 
     @Override public BytesMessage createBytesMessageToTopic(String topic, byte[] body) {
@@ -115,7 +108,7 @@ public class DefaultProducer implements Producer {
     }
 
     @Override public BytesMessage createBytesMessageToQueue(String queue, byte[] body) {
-        init();
+
         DefaultBytesMessage defaultBytesMessage = null;
        if (queue.substring(0, queue.indexOf("_")).equals("QUEUE")) {
          /*   if (!hashMap.containsKey(queue)) {
