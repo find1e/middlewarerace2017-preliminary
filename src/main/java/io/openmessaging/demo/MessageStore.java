@@ -48,7 +48,7 @@ public class MessageStore  {
 
     private HashMap<String,FileChannelProxy> topicMap = new HashMap(120);
 
-    private DistributeLock sendLock=new DistributeLock(140);
+    private DistributeLock sendLock=new DistributeLock(160);
 
     final ThreadLocal threadLocal=new ThreadLocal();
 
