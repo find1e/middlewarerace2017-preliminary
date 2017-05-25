@@ -17,12 +17,17 @@
 
 package io.openmessaging;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 /**
- * The {@code BytesMessage} contains a stream of uninterpreted bytes. It inherits from the {@code Message} interface and
- * adds a bytes message body.
+ * The {@code ServiceLifecycle} defines a lifecycle interface for a OMS related service endpoint, like {@link Producer},
+ * {@link PushConsumer}, and so on.
  * <p>
- * The {@code BytesMessage} doesn't know the format or encoding Rules of the body, the provider and consumer decide the
- * interpretation of the bytes body.
+ * If the service endpoint class implements the {@code ServiceLifecycle} interface, most of the containers can manage
+ * the lifecycle of the corresponding service endpoint objects easily.
+ * <p>
+ * Any service endpoint should support repeated restart if it implements the {@code ServiceLifecycle} interface.
  *
  * @author vintagewang@apache.org
  * @author yukon@apache.org
@@ -30,18 +35,18 @@ package io.openmessaging;
  * @version OMS 1.0
  * @since OMS 1.0
  */
-public interface BytesMessage extends Message {
+public interface ServiceLifecycle {
     /**
-     * Returns the bytes message body.
-     *
-     * @return the bytes message body
+     * Used for start or initialization of a service endpoint. A service endpoint instance will be in a ready state
+     * after this method has been completed.
      */
-    byte[] getBody();
+    @PostConstruct
+    void start();
 
     /**
-     * Sets the bytes message body.
-     *
-     * @param body the message body to be set
+     * Notify a service instance of the end of its life cycle. Once this method completes, the service endpoint could be
+     * destroyed and eligible for garbage collection.
      */
-    BytesMessage setBody(final byte[] body);
+    @PreDestroy
+    void shutdown();
 }

@@ -15,33 +15,31 @@
  *  limitations under the License.
  */
 
-package io.openmessaging;
+package io.openmessaging.observer;
+
+import java.util.Observable;
 
 /**
- * The {@code BytesMessage} contains a stream of uninterpreted bytes. It inherits from the {@code Message} interface and
- * adds a bytes message body.
- * <p>
- * The {@code BytesMessage} doesn't know the format or encoding Rules of the body, the provider and consumer decide the
- * interpretation of the bytes body.
- *
  * @author vintagewang@apache.org
- * @author yukon@apache.org
  *
  * @version OMS 1.0
  * @since OMS 1.0
  */
-public interface BytesMessage extends Message {
+public interface Observer<T> {
     /**
-     * Returns the bytes message body.
-     *
-     * @return the bytes message body
+     * Notifies the Observer that the {@link Observable} has finished sending push-based notifications.
+     * <p>
+     * The {@link Observable} will not call this method if it calls {@link #onError}.
      */
-    byte[] getBody();
+    void onCompleted();
 
     /**
-     * Sets the bytes message body.
+     * Notifies the Observer that the {@link Observable} has experienced an error condition.
+     * <p>
+     * If the {@link Observable} calls this method, it will not thereafter call
+     * {@link #onCompleted}.
      *
-     * @param body the message body to be set
+     * @param e the exception encountered by the Observable
      */
-    BytesMessage setBody(final byte[] body);
+    void onError(Throwable e);
 }

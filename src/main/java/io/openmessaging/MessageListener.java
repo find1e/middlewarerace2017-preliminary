@@ -18,11 +18,8 @@
 package io.openmessaging;
 
 /**
- * The {@code BytesMessage} contains a stream of uninterpreted bytes. It inherits from the {@code Message} interface and
- * adds a bytes message body.
- * <p>
- * The {@code BytesMessage} doesn't know the format or encoding Rules of the body, the provider and consumer decide the
- * interpretation of the bytes body.
+ * The message listener interface. A message listener must implement this {@code MessageListener} interface and register
+ * itself to a consumer instance to asynchronously receive messages.
  *
  * @author vintagewang@apache.org
  * @author yukon@apache.org
@@ -30,18 +27,14 @@ package io.openmessaging;
  * @version OMS 1.0
  * @since OMS 1.0
  */
-public interface BytesMessage extends Message {
+public interface MessageListener {
     /**
-     * Returns the bytes message body.
+     * Callback method to receive incoming messages.
+     * <p>
+     * A message listener should handle different types of {@code Message}.
      *
-     * @return the bytes message body
+     * @param message the received Message object
+     * @param context the context delivered to the consume thread
      */
-    byte[] getBody();
-
-    /**
-     * Sets the bytes message body.
-     *
-     * @param body the message body to be set
-     */
-    BytesMessage setBody(final byte[] body);
+    void onMessage(Message message, OnMessageContext context);
 }

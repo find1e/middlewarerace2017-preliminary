@@ -18,30 +18,24 @@
 package io.openmessaging;
 
 /**
- * The {@code BytesMessage} contains a stream of uninterpreted bytes. It inherits from the {@code Message} interface and
- * adds a bytes message body.
- * <p>
- * The {@code BytesMessage} doesn't know the format or encoding Rules of the body, the provider and consumer decide the
- * interpretation of the bytes body.
- *
  * @author vintagewang@apache.org
  * @author yukon@apache.org
  *
  * @version OMS 1.0
  * @since OMS 1.0
  */
-public interface BytesMessage extends Message {
+public interface PromiseListener<V> {
     /**
-     * Returns the bytes message body.
+     * Invoked when the operation associated with the {@code Promise} has been completed successfully.
      *
-     * @return the bytes message body
+     * @param promise the source {@code Promise} which called this callback
      */
-    byte[] getBody();
+    void operationComplete(Promise<V> promise);
 
     /**
-     * Sets the bytes message body.
+     * Invoked when the operation associated with the {@code Promise} has been completed unsuccessfully.
      *
-     * @param body the message body to be set
+     * @param promise the source {@code Promise} which called this callback
      */
-    BytesMessage setBody(final byte[] body);
+    void operationFailed(Promise<V> promise);
 }

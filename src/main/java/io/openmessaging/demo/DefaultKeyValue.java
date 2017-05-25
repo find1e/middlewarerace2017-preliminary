@@ -17,40 +17,29 @@ public class DefaultKeyValue implements KeyValue {
 
     @Override
     public KeyValue put(String key, int value) {
-        File fileTopic=new File(value+"/"+MessageHeader.TOPIC);
-        File fileQueue=new File(value+"/"+MessageHeader.QUEUE);
-        fileQueue.mkdir();
-        fileTopic.mkdir();
+
         kvs.put(key, value);
         return this;
     }
 
+
     @Override
     public KeyValue put(String key, long value) {
-        File fileTopic=new File(value+"/"+MessageHeader.TOPIC);
-        File fileQueue=new File(value+"/"+MessageHeader.QUEUE);
-        fileQueue.mkdir();
-        fileTopic.mkdir();
+
         kvs.put(key, value);
         return this;
     }
 
     @Override
     public KeyValue put(String key, double value) {
-        File fileTopic=new File(value+"/"+MessageHeader.TOPIC);
-        File fileQueue=new File(value+"/"+MessageHeader.QUEUE);
-        fileQueue.mkdir();
-        fileTopic.mkdir();
+
         kvs.put(key, value);
         return this;
     }
 
     @Override
     public KeyValue put(String key, String value) {
-        File fileTopic=new File(value+"/"+MessageHeader.TOPIC);
-        File fileQueue=new File(value+"/"+MessageHeader.QUEUE);
-        fileQueue.mkdir();
-        fileTopic.mkdir();
+
         kvs.put(key, value);
         return this;
     }

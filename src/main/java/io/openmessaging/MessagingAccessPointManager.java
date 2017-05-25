@@ -18,30 +18,21 @@
 package io.openmessaging;
 
 /**
- * The {@code BytesMessage} contains a stream of uninterpreted bytes. It inherits from the {@code Message} interface and
- * adds a bytes message body.
- * <p>
- * The {@code BytesMessage} doesn't know the format or encoding Rules of the body, the provider and consumer decide the
- * interpretation of the bytes body.
- *
  * @author vintagewang@apache.org
- * @author yukon@apache.org
  *
  * @version OMS 1.0
  * @since OMS 1.0
  */
-public interface BytesMessage extends Message {
-    /**
-     * Returns the bytes message body.
-     *
-     * @return the bytes message body
-     */
-    byte[] getBody();
+public class MessagingAccessPointManager {
+    public static MessagingAccessPoint getMessagingAccessPoint(String url) {
+        return getMessagingAccessPoint(url, null);
+    }
 
-    /**
-     * Sets the bytes message body.
-     *
-     * @param body the message body to be set
-     */
-    BytesMessage setBody(final byte[] body);
+    public static MessagingAccessPoint getMessagingAccessPoint(String url, KeyValue properties) {
+        return null;
+    }
+
+    public static KeyValue buildKeyValue() {
+        return null;
+    }
 }

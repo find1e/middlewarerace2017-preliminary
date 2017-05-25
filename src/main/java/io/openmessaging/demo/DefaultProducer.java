@@ -1,11 +1,7 @@
 
 package io.openmessaging.demo;
-import io.openmessaging.BytesMessage;
-import io.openmessaging.KeyValue;
-import io.openmessaging.Message;
-import io.openmessaging.MessageFactory;
-import io.openmessaging.MessageHeader;
-import io.openmessaging.Producer;
+import io.openmessaging.*;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -22,83 +18,17 @@ public class DefaultProducer implements Producer {
 
     public DefaultProducer(KeyValue properties) {
         this.properties = properties;
-        init();
+
     }
 
-    public void init(){
-        if(MessageStore.atomicBoolean.compareAndSet(true,false)) {
 
-
-            File file = new File(properties.getString("STORE_PATH") + "/" + MessageHeader.QUEUE);
-
-            try {
-                file.mkdir();
-                for (int checkNum = 0; checkNum < 20; checkNum++) {
-                    File bucketFile = new File(file.getAbsolutePath() + "/" + "QUEUE_" + checkNum);
-                    bucketFile.createNewFile();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-
-            File file2 = new File(properties.getString("STORE_PATH") + "/" + MessageHeader.TOPIC);
-
-            try {
-                file2.mkdir();
-                for (int checkNum = 0; checkNum < 100; checkNum++) {
-                    File bucketFile = new File(file2.getAbsolutePath() + "/" + "TOPIC_" + checkNum);
-                    bucketFile.createNewFile();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-
-
-
-            messageStore.setSendMap(new HashMap(140));
-            File file3 = new File(properties.getString("STORE_PATH"));
-
-            File[] files = file3.listFiles();
-            for (File f : files) {
-                File[] fl = f.listFiles();
-                for (File l : fl) {
-                    FileChannelProxy fileChannelProxy = new FileChannelProxy();
-                    FileOutputStream fileOutputStream = null;
-                    try {
-                        fileOutputStream = new FileOutputStream(f.getAbsolutePath() + "/" + l.getName());
-                    } catch (FileNotFoundException e) {
-                        e.printStackTrace();
-                    }
-                    FileChannel fileChannel = fileOutputStream.getChannel();
-                    fileChannelProxy.setFileChannel(fileChannel);
-                    fileChannelProxy.setFileOutputStream(fileOutputStream);
-                    fileChannelProxy.runThread.setFileChannel(fileChannel);
-
-                    HashMap sendMap = messageStore.getSendMap();
-                    sendMap.put(l.getName(), fileChannelProxy);
-
-                }
-
-            }
-
-        }
-    }
 
 
 
 
     @Override public BytesMessage createBytesMessageToTopic(String topic, byte[] body) {
 
-        if(!hashMap.containsKey(topic)){
-            File fileChild = new File(properties.getString("STORE_PATH") +"/"+MessageHeader.TOPIC+"/"+topic);
-            try {
-                fileChild.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+
 
         DefaultBytesMessage defaultBytesMessage= (DefaultBytesMessage) messageFactory.createBytesMessageToTopic(topic, body);
         String key= (String) properties.keySet().toArray()[0];
@@ -111,26 +41,11 @@ public class DefaultProducer implements Producer {
     @Override public BytesMessage createBytesMessageToQueue(String queue, byte[] body) {
 
         DefaultBytesMessage defaultBytesMessage = null;
-        if (queue.substring(0, queue.indexOf("_")).equals("QUEUE")) {
-         /*   if (!hashMap.containsKey(queue)) {
-                File fileChild = new File(properties.getString("STORE_PATH") + "/" + MessageHeader.QUEUE + "/" + queue);
-                try {
-                    fileChild.createNewFile();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }*/
+       if (queue.substring(0, queue.indexOf("_")).equals("QUEUE")) {
+
             defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToQueue(queue, body);
         } else {
-          /*  if (!hashMap.containsKey(queue)) {
-                File fileChild = new File(properties.getString("STORE_PATH") + "/" + MessageHeader.TOPIC + "/" + queue);
-                try {
-                    fileChild.createNewFile();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            */
+
             defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToTopic(queue, body);
 
 
@@ -151,11 +66,9 @@ public class DefaultProducer implements Producer {
 
 
 
-        try {
-            messageStore.putMessage(message,properties);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
+            messageStore.putMessage((DefaultBytesMessage) message,properties);
+
 
     }
 
@@ -163,6 +76,15 @@ public class DefaultProducer implements Producer {
         throw new UnsupportedOperationException("Unsupported");
     }
 
+    @Override
+    public Promise<Void> sendAsync(Message message) {
+        return null;
+    }
+
+    @Override
+    public Promise<Void> sendAsync(Message message, KeyValue properties) {
+        return null;
+    }
 
 
     @Override public void sendOneway(Message message) {
@@ -173,4 +95,29 @@ public class DefaultProducer implements Producer {
         throw new UnsupportedOperationException("Unsupported");
     }
 
+    @Override
+    public BatchToPartition createBatchToPartition(String partitionName) {
+        return null;
+    }
+
+    @Override
+    public BatchToPartition createBatchToPartition(String partitionName, KeyValue properties) {
+        return null;
+    }
+
+    @Override
+    public void flush() {
+
+        messageStore.flush(properties);
+    }
+
+    @Override
+    public void start() {
+
+    }
+
+    @Override
+    public void shutdown() {
+
+    }
 }

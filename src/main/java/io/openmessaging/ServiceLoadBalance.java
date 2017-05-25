@@ -17,31 +17,23 @@
 
 package io.openmessaging;
 
+import java.util.Set;
+
 /**
- * The {@code BytesMessage} contains a stream of uninterpreted bytes. It inherits from the {@code Message} interface and
- * adds a bytes message body.
- * <p>
- * The {@code BytesMessage} doesn't know the format or encoding Rules of the body, the provider and consumer decide the
- * interpretation of the bytes body.
- *
  * @author vintagewang@apache.org
- * @author yukon@apache.org
  *
  * @version OMS 1.0
  * @since OMS 1.0
  */
-public interface BytesMessage extends Message {
+public interface ServiceLoadBalance {
     /**
-     * Returns the bytes message body.
+     * Select a collection of eligible providerServicePoint object from the the list of providerServicePoint provided
+     * According to different selection strategies to select providerServicePoint that satisfied with application needs,
+     * such as RoundRobin or Random etc.
      *
-     * @return the bytes message body
+     * @param servicePropertiesList providerServicePoint to choose from.
+     * @return a collection of eligible providerServicePoint object
      */
-    byte[] getBody();
+    Set<ServiceProperties> select(Set<ServiceProperties> servicePropertiesList);
 
-    /**
-     * Sets the bytes message body.
-     *
-     * @param body the message body to be set
-     */
-    BytesMessage setBody(final byte[] body);
 }
