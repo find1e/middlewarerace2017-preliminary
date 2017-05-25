@@ -56,6 +56,44 @@ public class DemoTester {
 
         //请保证数据写入磁盘中
 
+        {
+            PullConsumer consumer2 = new DefaultPullConsumer(properties);
+            List<String> topics = new ArrayList<>();
+            topics.add(topic1);
+            topics.add(topic2);
+            consumer2.attachQueue(queue2, topics);
+            int queue2Offset = 0, topic1Offset = 0, topic2Offset = 0;
+
+            long startConsumer = System.currentTimeMillis();
+            while (true) {
+                DefaultBytesMessage message = (DefaultBytesMessage) consumer2.poll();
+                if (message == null) {
+                    //拉取为null则认为消息已经拉取完毕
+                    break;
+                }
+
+                String topic = message.headers().getString(MessageHeader.TOPIC);
+                String queue = message.headers().getString(MessageHeader.QUEUE);
+                //实际测试时，会一一比较各个字段
+                if (topic != null) {
+                    if (topic.equals(topic1)) {
+                        System.out.println("topic1"+compare(messagesForTopic1.get(topic1Offset++), message));
+                    } else {
+                        //Assert.assertEquals(topic2, topic);
+                        System.out.println("topic2"+compare(messagesForTopic2.get(topic2Offset++), message));
+                    }
+                } else {
+
+                    //Assert.assertEquals(queue2, queue);
+                    System.out.println("queue1"+compare(messagesForQueue2.get(queue2Offset++), message));
+                }
+            }
+            long endConsumer = System.currentTimeMillis();
+            long T2 = endConsumer - startConsumer;
+            System.out.println(String.format("Team2 cost:%d ms tps:%d q/ms", T2 + T1, (queue2Offset + topic1Offset)/(T1 + T2)));
+        }
+
+
         //消费样例1，实际测试时会Kill掉发送进程，另取进程进行消费
         {
             PullConsumer consumer1 = new DefaultPullConsumer(properties);
@@ -99,43 +137,6 @@ public class DemoTester {
 
         }
         //消费样例2，实际测试时会Kill掉发送进程，另取进程进行消费
-        {
-            PullConsumer consumer2 = new DefaultPullConsumer(properties);
-            List<String> topics = new ArrayList<>();
-            topics.add(topic1);
-            topics.add(topic2);
-            consumer2.attachQueue(queue2, topics);
-            int queue2Offset = 0, topic1Offset = 0, topic2Offset = 0;
-
-            long startConsumer = System.currentTimeMillis();
-            while (true) {
-                DefaultBytesMessage message = (DefaultBytesMessage) consumer2.poll();
-                if (message == null) {
-                    //拉取为null则认为消息已经拉取完毕
-                    break;
-                }
-
-                String topic = message.headers().getString(MessageHeader.TOPIC);
-                String queue = message.headers().getString(MessageHeader.QUEUE);
-                //实际测试时，会一一比较各个字段
-                if (topic != null) {
-                    if (topic.equals(topic1)) {
-                       System.out.println("topic1"+compare(messagesForTopic1.get(topic1Offset++), message));
-                   } else {
-                        //Assert.assertEquals(topic2, topic);
-                        System.out.println("topic2"+compare(messagesForTopic2.get(topic2Offset++), message));
-                    }
-                } else {
-
-                    //Assert.assertEquals(queue2, queue);
-                    System.out.println("queue1"+compare(messagesForQueue2.get(queue2Offset++), message));
-                }
-            }
-            long endConsumer = System.currentTimeMillis();
-            long T2 = endConsumer - startConsumer;
-            System.out.println(String.format("Team2 cost:%d ms tps:%d q/ms", T2 + T1, (queue2Offset + topic1Offset)/(T1 + T2)));
-        }
-
 
     }
     public static boolean compare(DefaultBytesMessage defaultBytesMessage1, DefaultBytesMessage defaultBytesMessage2) {
