@@ -133,7 +133,7 @@ public class MessageStore {
             length += childByte.length;
             ++length;
         }
-        if (length > byteBuffer.remaining()) {
+        if (length >= byteBuffer.remaining()) {
             try {
                 semaphore.acquire();
             } catch (InterruptedException e) {
@@ -363,7 +363,7 @@ public class MessageStore {
    public void flush(KeyValue properties) {
 
         if (flushFlag.compareAndSet(true,false)) {
-            System.out.println("111");
+           // System.out.println("111");
             File file = new File(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.get());
 
             if (!file.exists()) {
