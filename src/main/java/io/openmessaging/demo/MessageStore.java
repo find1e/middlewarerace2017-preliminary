@@ -45,7 +45,7 @@ public class MessageStore {
 
     private AtomicBoolean flushFlag = new AtomicBoolean(true);
 
-    private Semaphore semaphore = new Semaphore(50);
+    private Semaphore semaphore = new Semaphore(20);
 
     public MessageStore(){
 
