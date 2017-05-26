@@ -5,10 +5,13 @@ import io.openmessaging.Message;
 
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
+import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -50,16 +53,7 @@ public class MessageStore {
 
 
 
-    public MessageStore(){
 
-        init();
-
-    }
-    public void init(){
-        for (int checkNum = 0;checkNum < 20;checkNum++) {
-            queueMap.put(checkNum,new LinkedList<DefaultBytesMessage>());
-        }
-    }
 
 
     public byte[][] serianized(DefaultBytesMessage message){
@@ -155,24 +149,55 @@ public class MessageStore {
 
     }
 
-    public ByteBuffer deSerianied(KeyValue properties){
-        File file = new File(properties.getString("STORE_PATH")+"/"+atomicIntegerFileName.get());
+    public synchronized ByteBuffer deSerianied(KeyValue properties){
+        File file = new File(properties.getString("STORE_PATH")+"/"+atomicIntegerFileName.getAndAdd(1));
         if (!file.exists()) {
             atomicBooleanOverFlag.compareAndSet(true,false);
             return null;
 
         }
-        Path path = Paths.get(properties.getString("STORE_PATH")+"/"+atomicIntegerFileName.getAndAdd(1));
+
+        FileInputStream fileInputStream = null;
+        FileChannel fileChannel = null;
+
+
+        try {
+
+           fileInputStream = new FileInputStream(file);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+
+
+        }
+
+        try {
+            fileChannel = fileInputStream.getChannel();
+            byteBuffer.clear();
+            fileChannel.read(byteBuffer);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+
+        }
+        try {
+            fileChannel.close();
+            fileInputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+       /* Path path = Paths.get(properties.getString("STORE_PATH")+"/"+atomicIntegerFileName.getAndAdd(1));
         AsynchronousFileChannel asynchronousFileChannel = null;
         try {
             asynchronousFileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.READ);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        ByteBuffer byteBuffer = ByteBuffer.allocate(SendConstants.buffSize);
+
         Future future = asynchronousFileChannel.read(byteBuffer,0);
 
-        while (!future.isDone());
+        while (!future.isDone());*/
 
         return byteBuffer;
     }
@@ -237,6 +262,7 @@ public class MessageStore {
                     String propertiesKey = new String(propertiesKeyByte);
                     String propertiesValue = new String(propertiesValueByte);
 
+                  //  System.out.println(headerKey+headerValue+propertiesKey+propertiesValue+new String(body));
 
                     DefaultBytesMessage defaultBytesMessage = new DefaultBytesMessage(body);
                     defaultBytesMessage.putHeaders(headerKey,headerValue);
@@ -262,11 +288,12 @@ public class MessageStore {
                    if (list == null) {
                       list = new ArrayList<Integer>();
                        threadIdMap.put(headerValue,list);
-                   }
 
+                   }
+                    Queue queue = null;
                     for (int id : list) {
 
-                        Queue queue = queueMap.get(id);
+                        queue = queueMap.get(id);
                         queue.add(defaultBytesMessage);
                     }
 
@@ -285,7 +312,7 @@ public class MessageStore {
         }
 
     }
-    public synchronized DefaultBytesMessage pullMessage(String queue, String bucket,KeyValue properties,int threadId) {
+    public synchronized DefaultBytesMessage pullMessage(KeyValue properties,int threadId) {
 
 
         while (true) {
@@ -310,11 +337,11 @@ public class MessageStore {
 
             }
 
-            String headerKey = defaultBytesMessage.headers().keySet().iterator().next();
+        /*    String headerKey = defaultBytesMessage.headers().keySet().iterator().next();
             String headerValue = defaultBytesMessage.headers().getString(headerKey);
             String propertiesKey = defaultBytesMessage.properties().keySet().iterator().next();
             String propertiesValue = defaultBytesMessage.properties().getString(propertiesKey);
-            String body = new String(defaultBytesMessage.getBody());
+            String body = new String(defaultBytesMessage.getBody());*/
 
             return defaultBytesMessage;
         }
@@ -324,6 +351,8 @@ public class MessageStore {
 
 
 
+
+            queueMap.put(threadId,new LinkedList<DefaultBytesMessage>());
 
         List<Integer> list = new ArrayList();
         list.add(threadId);
@@ -362,11 +391,6 @@ public class MessageStore {
 
 
 */
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
     }
    public void flush(KeyValue properties) {
 

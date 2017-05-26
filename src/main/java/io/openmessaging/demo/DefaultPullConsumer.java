@@ -37,24 +37,12 @@ public class DefaultPullConsumer implements PullConsumer {
 
     @Override public  Message poll() {
 
-        while (true){
-            if(bucketList.size()==0){
-                return null;
 
-            }
-            for (int checkNum=0;checkNum<bucketList.size();checkNum++) {
-               DefaultBytesMessage defaultBytesMessage= messageStore.pullMessage(queue,bucketList.get(checkNum),properties,threadId);
+               DefaultBytesMessage defaultBytesMessage= messageStore.pullMessage(properties,threadId);
 
 
-               if (defaultBytesMessage == null) {
-                   bucketList.remove(checkNum);
-                   continue;
-               }
-                String headerKey = defaultBytesMessage.headers().keySet().iterator().next();
-                String headerValue = defaultBytesMessage.headers().getString(headerKey);
-                String propertiesKey = defaultBytesMessage.properties().keySet().iterator().next();
-                String propertiesValue = defaultBytesMessage.properties().getString(propertiesKey);
-                String body = new String(defaultBytesMessage.getBody());
+
+
             //    System.out.println(headerKey+headerValue+propertiesKey+propertiesValue);
 
                 return defaultBytesMessage;
@@ -62,8 +50,8 @@ public class DefaultPullConsumer implements PullConsumer {
             }
 
 
-        }
-    }
+
+
     @Override public Message poll(KeyValue properties) {
         throw new UnsupportedOperationException("Unsupported");
     }
