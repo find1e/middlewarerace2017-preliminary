@@ -31,10 +31,6 @@ public class MessageStore {
         return INSTANCE;
     }
 
-    private Map<String, ArrayList<Message>> messageBuckets = new HashMap<>();
-
-    private Map<String, HashMap<String, Integer>> queueOffsets = new HashMap<>();
-
     private ByteBuffer byteBuffer = ByteBuffer.allocate(SendConstants.buffSize);
 
     private AtomicInteger atomicIntegerFileName = new AtomicInteger(0);
@@ -144,7 +140,7 @@ public class MessageStore {
         for (byte[] childByte : messageByte) {
             byteBuffer.put(childByte);
 
-            byteBuffer.put("$".getBytes()[0]);
+            byteBuffer.put(SendConstants.cutFlag);
         }
 
     }
