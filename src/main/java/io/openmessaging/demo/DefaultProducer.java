@@ -41,12 +41,12 @@ public class DefaultProducer implements Producer {
     @Override public BytesMessage createBytesMessageToQueue(String queue, byte[] body) {
 
         DefaultBytesMessage defaultBytesMessage = null;
-       if (queue.substring(0, queue.indexOf("_")).equals("QUEUE")) {
-
-            defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToQueue(queue, body);
+       if (queue.substring(0, queue.indexOf("_")).equals("TOPIC")) {
+           defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToTopic(queue, body);
         } else {
 
-            defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToTopic(queue, body);
+
+           defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToQueue(queue, body);
 
 
         }
