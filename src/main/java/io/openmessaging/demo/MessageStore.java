@@ -47,7 +47,7 @@ public class MessageStore {
 
     private Semaphore semaphore = new Semaphore(20);
 
-    private String base = null;
+    private String base ="/home/admin/race2017/data";
 
     private AtomicBoolean baseFlag = new AtomicBoolean(true);
 
@@ -123,11 +123,11 @@ public class MessageStore {
 
     public synchronized void putMessage(DefaultBytesMessage message,KeyValue properties) {
 
-        if (baseFlag.compareAndSet(true,false)) {
+     /*   if (baseFlag.compareAndSet(true,false)) {
             base = properties.getString(properties.keySet().iterator().next());
 
         }
-
+*/
 
         byte[][] messageByte = serianized(message);
         int length = 0;
@@ -354,11 +354,11 @@ public class MessageStore {
 
     public synchronized void attachInit(Collection<String> topics,String queue,KeyValue properties,int threadId){
 
-        File file = new File(properties.getString(properties.keySet().iterator().next())+"/"+0);
+     /*   File file = new File(properties.getString(properties.keySet().iterator().next())+"/"+0);
         if (file.exists()) {
             base = properties.getString(properties.keySet().iterator().next());
 
-        }
+        }*/
 
 
 

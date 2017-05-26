@@ -50,7 +50,7 @@ public class DefaultPullConsumer implements PullConsumer {
             String propertiesValue = defaultBytesMessage.properties().getString(propertiesKey);
             String body = new String(defaultBytesMessage.getBody());
 
-                    System.out.println(headerKey+headerValue+propertiesKey+propertiesValue+new String(body));
+                    System.out.println(headerKey+"-"+headerValue+"-"+propertiesKey+"-"+propertiesValue+"-"+new String(body));
             }
                 return defaultBytesMessage;
 
