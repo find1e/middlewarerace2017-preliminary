@@ -38,9 +38,12 @@ public class DefaultPullConsumer implements PullConsumer {
 
     @Override public  Message poll() {
 
-
-               DefaultBytesMessage defaultBytesMessage= messageStore.pullMessage(properties,threadId);
-
+        DefaultBytesMessage defaultBytesMessage = null;
+try {
+     defaultBytesMessage = messageStore.pullMessage(properties, threadId);
+}catch (Exception e){
+    System.out.println("kongzhi");
+}
 
 
             if (atomicBoolean.compareAndSet(true,false)) {
@@ -52,6 +55,7 @@ public class DefaultPullConsumer implements PullConsumer {
 
                     System.out.println(headerKey+"-"+headerValue+"-"+propertiesKey+"-"+propertiesValue+"-"+new String(body));
             }
+
                 return defaultBytesMessage;
 
             }

@@ -1,7 +1,9 @@
 package io.openmessaging.demo;
 
+
 import io.openmessaging.KeyValue;
 import io.openmessaging.Message;
+import io.openmessaging.MessageHeader;
 
 
 import java.io.File;
@@ -47,29 +49,40 @@ public class MessageStore {
 
     private Semaphore semaphore = new Semaphore(20);
 
-    private String base ="/home/admin/race2017/data";
-
-    private AtomicBoolean baseFlag = new AtomicBoolean(true);
 
 
 
 
+    public synchronized byte[] serianized(DefaultBytesMessage message){
 
+        StringBuilder stringBuilder = new StringBuilder();
+        for (String key : message.headers().keySet()){
+            stringBuilder.append(key);
+            stringBuilder.append(":");
+            stringBuilder.append(message.headers().getString(key));
+            stringBuilder.append("#");
 
-    public byte[][] serianized(DefaultBytesMessage message){
+        }
+        stringBuilder.append(SendConstants.cutChar);
+        for (String propertiesKey : message.properties().keySet()) {
+            stringBuilder.append(propertiesKey);
+            stringBuilder.append(":");
+            stringBuilder.append(message.properties().getString(propertiesKey));
+            stringBuilder.append("#");
 
-
-        String headerKey = message.headers().keySet().iterator().next();
-        String headerValue = message.headers().getString(headerKey);
-        String propertiesKey = message.properties().keySet().iterator().next();
-        String propertiesValue = message.properties().getString(propertiesKey);
+        }
+        stringBuilder.append(SendConstants.cutChar);
+        byte[] headerPropertiesByte = stringBuilder.toString().getBytes();
         byte[] body = message.getBody();
-        byte[] headerKeyByte = headerKey.getBytes();
-        byte[] headerValueByte = headerValue.getBytes();
-        byte[] propertiesKeyByte = propertiesKey.getBytes();
-        byte[] propertiesValueByte = propertiesValue.getBytes();
+        byte[] messageByte = new byte[headerPropertiesByte.length+body.length+1];
+        for (int index = 0;index < headerPropertiesByte.length;index++) {
+            messageByte[index] = headerPropertiesByte[index];
+        }
+        for (int index = 0,indexNum = headerPropertiesByte.length;index < body.length;index++,indexNum++) {
+            messageByte[indexNum] = body[index];
 
-        byte[][] messageByte = {headerKeyByte,headerValueByte,propertiesKeyByte,propertiesValueByte,body};
+        }
+        messageByte[messageByte.length - 1] = SendConstants.cutFlag;
         return messageByte;
     }
 
@@ -77,7 +90,7 @@ public class MessageStore {
 
 
     public void sendMessage(ByteBuffer byteBuffer,KeyValue properties){
-        File file = new File(base+"/"+atomicIntegerFileName.get());
+        File file = new File(properties.getString("STORE_PATH") +"/"+atomicIntegerFileName.get());
 
         if (!file.exists()) {
             try {
@@ -87,7 +100,7 @@ public class MessageStore {
             }
 
         }
-        Path path = Paths.get(base+"/"+atomicIntegerFileName.getAndAdd(1));
+        Path path = Paths.get(properties.getString("STORE_PATH") +"/"+atomicIntegerFileName.getAndAdd(1));
         AsynchronousFileChannel asynchronousFileChannel = null;
         try {
             asynchronousFileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.WRITE);
@@ -123,19 +136,9 @@ public class MessageStore {
 
     public synchronized void putMessage(DefaultBytesMessage message,KeyValue properties) {
 
-     /*   if (baseFlag.compareAndSet(true,false)) {
-            base = properties.getString(properties.keySet().iterator().next());
+        byte[] messageByte = serianized(message);
 
-        }
-*/
-
-        byte[][] messageByte = serianized(message);
-        int length = 0;
-        for (byte[] childByte : messageByte) {
-            length += childByte.length;
-            ++length;
-        }
-        if (length >= byteBuffer.remaining()) {
+        if (messageByte.length >= byteBuffer.remaining()) {
             try {
                 semaphore.acquire();
             } catch (InterruptedException e) {
@@ -144,18 +147,13 @@ public class MessageStore {
             sendMessage(byteBuffer,properties);
 
             byteBuffer = ByteBuffer.allocate(SendConstants.buffSize);
-
         }
-        for (byte[] childByte : messageByte) {
-            byteBuffer.put(childByte);
-
-            byteBuffer.put(SendConstants.cutFlag);
-        }
+            byteBuffer.put(messageByte);
 
     }
 
     public synchronized ByteBuffer deSerianied(KeyValue properties){
-        File file = new File(base+"/"+atomicIntegerFileName.getAndAdd(1));
+        File file = new File(properties.getString("STORE_PATH") +"/"+atomicIntegerFileName.getAndAdd(1));
         if (!file.exists()) {
             atomicBooleanOverFlag.compareAndSet(true,false);
             return null;
@@ -206,24 +204,61 @@ public class MessageStore {
 
         return byteBuffer;
     }
-    public synchronized void insertMessage(ByteBuffer byteBuffer){
-        byteBuffer.flip();
-        byte[] buffBytes = byteBuffer.array();
+
+
+    public static void main (String[] args) {
+        MessageStore main = new MessageStore();
+        DefaultBytesMessage defaultBytesMessage = new DefaultBytesMessage("hello".getBytes());
+        defaultBytesMessage.putHeaders("topic","TOPIC_1");
+        defaultBytesMessage.putProperties("ppp","kkk");
+        defaultBytesMessage.putProperties("STORE_PATH","/home/fbhw/race");
+
+        DefaultBytesMessage defaultBytesMessage1 = new DefaultBytesMessage(null);
+        byte[] buffBytes = main.serianized(defaultBytesMessage);
         int cutCount = 1;
         int seek = 0;
-        byte[] headerKeyByte = null;
-        byte[] headerValueByte = null;
-        byte[] propertiesKeyByte = null;
-        byte[] propertiesValueByte = null;
+        byte[] headerByte = null;
+        byte[] propertiesByte = null;
         byte[] body = null;
+        String headerStirng = null;
+        String propertiesString = null;
         for (int indexNum = 0;indexNum < buffBytes.length;indexNum++) {
 
             if (buffBytes[indexNum] == SendConstants.cutFlag) {
 
                 if (cutCount == 1) {
-                    headerKeyByte = new byte[indexNum - seek];
-                    for (int checkNum = 0;checkNum < headerKeyByte.length;checkNum++,seek++) {
-                        headerKeyByte[checkNum] = buffBytes[seek];
+
+                    headerByte = new byte[indexNum - seek];
+
+                    for (int checkNum = 0;checkNum < headerByte.length;checkNum++,seek++) {
+                        headerByte[checkNum] = buffBytes[seek];
+
+                    }
+                  //  System.out.println(Arrays.toString(headerByte));
+                    int seekChild = 0;
+                    for (int index = 0;index < headerByte.length;index++) {
+                        if (headerByte[index] == SendConstants.cutChild) {
+
+                            byte[] header = new byte[index - seekChild];
+                            index++;
+
+                            for (int i = 0;i < header.length;i++,seekChild++) {
+                                header[i] = headerByte[seekChild];
+
+
+                            }
+                            headerStirng = new String(header);
+                            String[] headers = headerStirng.split(":");
+                            String headerKey = headers[0];
+
+                            String headerValue = headers[1];
+                           // System.out.println(headerKey+headerValue);
+                            defaultBytesMessage1.putHeaders(headerKey,headerValue);
+
+
+                            seekChild++;
+                        }
+
 
                     }
 
@@ -231,87 +266,223 @@ public class MessageStore {
 
 
                 }
+
                 if (cutCount == 2) {
-                    headerValueByte = new byte[indexNum - seek];
-                    for (int checkNum = 0;checkNum < headerValueByte.length;checkNum++,seek++) {
-                        headerValueByte[checkNum] = buffBytes[seek];
+
+                    propertiesByte = new byte[indexNum - seek];
+
+                    for (int checkNum = 0; checkNum <propertiesByte.length; checkNum++, seek++) {
+                        propertiesByte[checkNum] = buffBytes[seek];
+
+                    }
+                   // System.out.println(Arrays.toString(propertiesByte));
+                    int seekChild = 0;
+                    for (int index = 0; index < propertiesByte.length; index++) {
+                        if (propertiesByte[index] == SendConstants.cutChild) {
+
+
+                            byte[] properties = new byte[index - seekChild];
+                            index++;
+                            for (int i = 0; i < properties.length; i++, seekChild++) {
+                                properties[i] = propertiesByte[seekChild];
+
+
+                            }
+                            propertiesString = new String(properties);
+
+                            String[] propertie = propertiesString.split(":");
+                            String propertiesKey = propertie[0];
+                            String propertiesValue = propertie[1];
+                          /*  System.out.println(propertiesKey);
+                            System.out.println(propertiesValue);*/
+                            defaultBytesMessage1.putProperties(propertiesKey,propertiesValue);
+
+                            seekChild++;
+                        }
+
 
                     }
 
-                }
-                if (cutCount == 3) {
-                    propertiesKeyByte = new byte[indexNum - seek];
-                    for (int checkNum = 0;checkNum < propertiesKeyByte.length;checkNum++,seek++) {
-                        propertiesKeyByte[checkNum] = buffBytes[seek];
-
-                    }
 
                 }
-                if (cutCount == 4) {
-                    propertiesValueByte = new byte[indexNum - seek];
-                    for (int checkNum = 0;checkNum < propertiesValueByte.length;checkNum++,seek++) {
-                        propertiesValueByte[checkNum] = buffBytes[seek];
 
-                    }
-
-                }
-                if (cutCount == 5) {
+                    if (cutCount == 3) {
                     body = new byte[indexNum - seek];
-                    for (int checkNum = 0;checkNum < body.length;checkNum++,seek++) {
+                    for (int checkNum = 0; checkNum < body.length; checkNum++, seek++) {
                         body[checkNum] = buffBytes[seek];
 
                     }
 
-                    String headerKey = new String(headerKeyByte);
-                    String headerValue = new String(headerValueByte);
-                    String propertiesKey = new String(propertiesKeyByte);
-                    String propertiesValue = new String(propertiesValueByte);
 
-                  //  System.out.println(headerKey+headerValue+propertiesKey+propertiesValue+new String(body));
+                    defaultBytesMessage1.setBody(body);
 
-                    DefaultBytesMessage defaultBytesMessage = new DefaultBytesMessage(body);
-                    defaultBytesMessage.putHeaders(headerKey,headerValue);
-                    defaultBytesMessage.putProperties(propertiesKey,propertiesValue);
 
-                  /*  QueueProxy queueProxy = map.get(headerValue);
-                    //TODO insert
-                    if (queueProxy == null) {
-                        queueProxy = new QueueProxy();
-                        map.put(headerValue,queueProxy);
-
-                    }
-                    queueProxy.add(defaultBytesMessage);
-*/
-                /*  System.out.println("__________________________________________");
-                  Iterator<Map.Entry<String, List<Integer>>> iterator = threadIdMap.entrySet().iterator();
-                  while (iterator.hasNext()){
-                      System.out.println(iterator.next().getKey());
-                  }
-                  System.out.println("--------------------------");
-                  System.out.println("headerValue:"+headerValue);*/
-                  List<Integer> list = threadIdMap.get(headerValue);
-                   if (list == null) {
-                      list = new ArrayList<Integer>();
-                       threadIdMap.put(headerValue,list);
-
-                   }
-                    Queue queue = null;
-                    for (int id : list) {
-
-                        queue = queueMap.get(id);
-                        queue.add(defaultBytesMessage);
-                    }
 
                     cutCount = 0;
                 }
 
                 ++cutCount;
                 ++seek;
+                }
+
+
+
+        }
+System.out.println("======");
+System.out.println(defaultBytesMessage1.headers().getString("topic"));
+       System.out.println(defaultBytesMessage1.properties().getString("STORE_PATH"));
+        System.out.println(defaultBytesMessage1.properties().getString("ppp"));
+        System.out.println(new String(defaultBytesMessage1.getBody()));
+
+
+    }
+    public synchronized void insertMessage(ByteBuffer byteBuffer){
+        byteBuffer.flip();
+        byte[] buffBytes = byteBuffer.array();
+
+        int cutCount = 1;
+        int seek = 0;
+        byte[] headerByte = null;
+        byte[] propertiesByte = null;
+        byte[] body = null;
+        String headerStirng = null;
+        String propertiesString = null;
+        DefaultBytesMessage defaultBytesMessage1 = new DefaultBytesMessage(null);
+        for (int indexNum = 0;indexNum < buffBytes.length;indexNum++) {
+
+            if (buffBytes[indexNum] == SendConstants.cutFlag) {
+
+                if (cutCount == 1) {
+
+                    headerByte = new byte[indexNum - seek];
+
+                    for (int checkNum = 0;checkNum < headerByte.length;checkNum++,seek++) {
+                        headerByte[checkNum] = buffBytes[seek];
+
+                    }
+                    //  System.out.println(Arrays.toString(headerByte));
+                    int seekChild = 0;
+                    for (int index = 0;index < headerByte.length;index++) {
+                        if (headerByte[index] == SendConstants.cutChild) {
+
+                            byte[] header = new byte[index - seekChild];
+                            index++;
+
+                            for (int i = 0;i < header.length;i++,seekChild++) {
+                                header[i] = headerByte[seekChild];
+
+
+                            }
+                            headerStirng = new String(header);
+                            String[] headers = headerStirng.split(":");
+                            String headerKey = headers[0];
+
+                            String headerValue = headers[1];
+                          //  System.out.println(headerKey+headerValue);
+                            defaultBytesMessage1.putHeaders(headerKey,headerValue);
+
+
+                            seekChild++;
+                        }
+
+
+                    }
 
 
 
 
+                }
+
+                if (cutCount == 2) {
+
+                    propertiesByte = new byte[indexNum - seek];
+
+                    for (int checkNum = 0; checkNum <propertiesByte.length; checkNum++, seek++) {
+                        propertiesByte[checkNum] = buffBytes[seek];
+
+                    }
+                    // System.out.println(Arrays.toString(propertiesByte));
+                    int seekChild = 0;
+                    for (int index = 0; index < propertiesByte.length; index++) {
+                        if (propertiesByte[index] == SendConstants.cutChild) {
+
+
+                            byte[] properties = new byte[index - seekChild];
+                            index++;
+                            for (int i = 0; i < properties.length; i++, seekChild++) {
+                                properties[i] = propertiesByte[seekChild];
+
+
+                            }
+                            propertiesString = new String(properties);
+
+                            String[] propertie = propertiesString.split(":");
+                            String propertiesKey = propertie[0];
+                            String propertiesValue = propertie[1];
+
+                         //   System.out.println(propertiesKey+propertiesValue);
+                            defaultBytesMessage1.putProperties(propertiesKey,propertiesValue);
+
+                            seekChild++;
+                        }
+
+
+                    }
+
+
+                }
+
+                if (cutCount == 3) {
+                    body = new byte[indexNum - seek];
+                    for (int checkNum = 0; checkNum < body.length; checkNum++, seek++) {
+                        body[checkNum] = buffBytes[seek];
+
+                    }
+
+                  //  System.out.println(new String(body));
+
+                    defaultBytesMessage1.setBody(body);
+                  /*  String headerKey = defaultBytesMessage1.headers().keySet().iterator().next();
+                    String headerValue = defaultBytesMessage1.headers().getString(headerKey);
+                    String propert = defaultBytesMessage1.properties().keySet().iterator().next();
+                    String properti = defaultBytesMessage1.properties().getString(propert);
+                    String bod = new String(defaultBytesMessage1.getBody());
+
+                    System.out.println(headerKey+"-"+headerValue+"-"+propert+"-"+properti+"-"+new String(bod));
+*/
+
+                        String bucket = defaultBytesMessage1.headers().keySet().contains(MessageHeader.TOPIC)?defaultBytesMessage1.headers().getString(MessageHeader.TOPIC):defaultBytesMessage1.headers().getString(MessageHeader.QUEUE);
+
+                    List<Integer> list = threadIdMap.get(bucket);
+                    if (list == null) {
+                        list = new ArrayList<Integer>();
+                        threadIdMap.put(bucket,list);
+
+                    }
+                    Queue queue = null;
+                    for (int id : list) {
+
+                        queue = queueMap.get(id);
+                        queue.add(defaultBytesMessage1);
+                    }
+
+
+                    if (++indexNum < buffBytes.length){
+                        defaultBytesMessage1 = new DefaultBytesMessage(null);
+                    }
+                    cutCount = 0;
+                }
+
+                ++cutCount;
+                ++seek;
             }
+
+
+
+
+
+
+
 
 
         }
@@ -348,17 +519,13 @@ public class MessageStore {
             String propertiesValue = defaultBytesMessage.properties().getString(propertiesKey);
             String body = new String(defaultBytesMessage.getBody());*/
 
+       // System.out.println(defaultBytesMessage);
             return defaultBytesMessage;
         }
     }
 
     public synchronized void attachInit(Collection<String> topics,String queue,KeyValue properties,int threadId){
 
-     /*   File file = new File(properties.getString(properties.keySet().iterator().next())+"/"+0);
-        if (file.exists()) {
-            base = properties.getString(properties.keySet().iterator().next());
-
-        }*/
 
 
 
@@ -406,7 +573,7 @@ public class MessageStore {
 
         if (flushFlag.compareAndSet(true,false)) {
            // System.out.println("111");
-            File file = new File(base + "/" + atomicIntegerFileName.get());
+            File file = new File(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.get());
 
             if (!file.exists()) {
                 try {
@@ -417,7 +584,7 @@ public class MessageStore {
                 }
             }
             if (byteBuffer.hasRemaining()) {
-                Path path = Paths.get(base + "/" + atomicIntegerFileName.getAndAdd(1));
+                Path path = Paths.get(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.getAndAdd(1));
                 AsynchronousFileChannel asynchronousFileChannel = null;
                 try {
                     asynchronousFileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.WRITE);

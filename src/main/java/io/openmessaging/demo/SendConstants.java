@@ -7,4 +7,12 @@ public class SendConstants {
     public static final int buffSize = 8000000;
 
     public static final byte cutFlag = "$".getBytes()[0];
+
+    public static final String cutChar = "$";
+
+    public static final String cutChildChar = "#";
+
+    public static final byte cutChild = "#".getBytes()[0];
+
+
 }

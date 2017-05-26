@@ -32,7 +32,7 @@ public class DemoTester {
         List<DefaultBytesMessage> messagesForTopic2 = new ArrayList<>(1024);
         List<DefaultBytesMessage> messagesForQueue1 = new ArrayList<>(1024);
         List<DefaultBytesMessage> messagesForQueue2 = new ArrayList<>(1024);
-        for (int i = 0; i < 20000; i++) {
+        for (int i = 0; i < 1024; i++) {
             //注意实际比赛可能还会向消息的headers或者properties里面填充其它内容
             messagesForTopic1.add((DefaultBytesMessage) producer.createBytesMessageToTopic(topic1, (topic1 + i).getBytes()));
             messagesForTopic2.add((DefaultBytesMessage) producer.createBytesMessageToTopic(topic2, (topic2 + i).getBytes()));
@@ -42,7 +42,7 @@ public class DemoTester {
 
         long start = System.currentTimeMillis();
         //发送, 实际测试时，会用多线程来发送, 每个线程发送自己的Topic和Queue
-        for (int i = 0; i < 20000; i++) {
+        for (int i = 0; i < 1024; i++) {
             producer.send(messagesForTopic1.get(i));
             producer.send(messagesForTopic2.get(i));
             producer.send(messagesForQueue1.get(i));
@@ -95,7 +95,7 @@ public class DemoTester {
 
 
         //消费样例1，实际测试时会Kill掉发送进程，另取进程进行消费
-        {
+      /*  {
             PullConsumer consumer1 = new DefaultPullConsumer(properties);
             consumer1.attachQueue(queue1, Collections.singletonList(topic1));
 
@@ -135,7 +135,7 @@ public class DemoTester {
             long T2 = endConsumer - startConsumer;
             System.out.println(String.format("Team1 cost:%d ms tps:%d q/ms", T2 + T1, (queue1Offset + topic1Offset)/(T1 + T2)));
 
-        }
+        }*/
         //消费样例2，实际测试时会Kill掉发送进程，另取进程进行消费
 
     }
