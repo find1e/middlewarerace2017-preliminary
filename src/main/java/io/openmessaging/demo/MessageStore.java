@@ -73,7 +73,7 @@ public class MessageStore {
 
 
     public void sendMessage(ByteBuffer byteBuffer,KeyValue properties){
-        File file = new File(properties.getString("STORE_PATH")+"/"+atomicIntegerFileName.get());
+        File file = new File(properties.getString(properties.keySet().iterator().next())+"/"+atomicIntegerFileName.get());
 
         if (!file.exists()) {
             try {
@@ -83,7 +83,7 @@ public class MessageStore {
             }
 
         }
-        Path path = Paths.get(properties.getString("STORE_PATH")+"/"+atomicIntegerFileName.getAndAdd(1));
+        Path path = Paths.get(properties.getString(properties.keySet().iterator().next())+"/"+atomicIntegerFileName.getAndAdd(1));
         AsynchronousFileChannel asynchronousFileChannel = null;
         try {
             asynchronousFileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.WRITE);
@@ -146,7 +146,7 @@ public class MessageStore {
     }
 
     public synchronized ByteBuffer deSerianied(KeyValue properties){
-        File file = new File(properties.getString("STORE_PATH")+"/"+atomicIntegerFileName.getAndAdd(1));
+        File file = new File(properties.getString(properties.keySet().iterator().next())+"/"+atomicIntegerFileName.getAndAdd(1));
         if (!file.exists()) {
             atomicBooleanOverFlag.compareAndSet(true,false);
             return null;
@@ -392,7 +392,7 @@ public class MessageStore {
 
         if (flushFlag.compareAndSet(true,false)) {
            // System.out.println("111");
-            File file = new File(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.get());
+            File file = new File(properties.getString(properties.keySet().iterator().next()) + "/" + atomicIntegerFileName.get());
 
             if (!file.exists()) {
                 try {
@@ -403,7 +403,7 @@ public class MessageStore {
                 }
             }
             if (byteBuffer.hasRemaining()) {
-                Path path = Paths.get(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.getAndAdd(1));
+                Path path = Paths.get(properties.getString(properties.keySet().iterator().next()) + "/" + atomicIntegerFileName.getAndAdd(1));
                 AsynchronousFileChannel asynchronousFileChannel = null;
                 try {
                     asynchronousFileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.WRITE);

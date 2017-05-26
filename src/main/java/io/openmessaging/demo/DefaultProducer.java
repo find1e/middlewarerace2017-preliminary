@@ -30,8 +30,17 @@ public class DefaultProducer implements Producer {
 
 
 
-        DefaultBytesMessage defaultBytesMessage= (DefaultBytesMessage) messageFactory.createBytesMessageToTopic(topic, body);
-        String key= (String) properties.keySet().toArray()[0];
+
+        DefaultBytesMessage defaultBytesMessage = null;
+        if (topic.substring(0, topic.indexOf("_")).equals("TOPIC")) {
+            defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToTopic(topic, body);
+        } else {
+
+
+            defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToQueue(topic, body);
+
+
+        }       String key= (String) properties.keySet().toArray()[0];
 
         defaultBytesMessage.putProperties(key,properties.getString(key));
         return defaultBytesMessage;
