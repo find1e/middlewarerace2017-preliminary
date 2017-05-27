@@ -53,7 +53,7 @@ public class MessageStore {
     private Semaphore semaphore = new Semaphore(20);
 
 
-    private ReentrantLock reentrantLock = new ReentrantLock(true);
+  //  private ReentrantLock reentrantLock = new ReentrantLock(true);
 
 
 
@@ -125,7 +125,7 @@ public class MessageStore {
     }
 
 
-    public  void putMessage(DefaultBytesMessage message,KeyValue properties) {
+    public  synchronized void putMessage(DefaultBytesMessage message,KeyValue properties) {
 
 
         byte[][] messageByte = serianized(message);
@@ -135,7 +135,7 @@ public class MessageStore {
             ++length;
         }
 
-        reentrantLock.lock();
+
         if (length >= byteBuffer.remaining()) {
             try {
                 semaphore.acquire();
@@ -152,7 +152,7 @@ public class MessageStore {
 
             byteBuffer.put("$".getBytes()[0]);
         }
-        reentrantLock.unlock();
+
 
     }
 
