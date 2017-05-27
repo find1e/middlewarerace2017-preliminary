@@ -388,29 +388,37 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
                                     headerKeyByte = new byte[j];
                                     headerValueByte = new byte[header.length - j - 1];
 
+
+                                    if (headerValueByte == null) {
+                                        System.out.println("headerValueByte" + headerValueByte);
+                                        System.out.println();
+                                    }
+                                    if (headerKeyByte == null) {
+                                        System.out.println("headerKeyByte" + headerKeyByte);
+
+                                    }
+
+
+                                    for (int q = 0; q < flag; q++) {
+
+                                        headerKeyByte[q] = header[q];
+
+                                    }
+                                    for (int w = 0, e = flag + 1; e < header.length; e++, w++) {
+
+
+                                        headerValueByte[w] = header[e];
+
+
+                                    }
+
+
+                                    //   System.out.println(new String(headerKeyByte)+new String(headerValueByte));
+                                    defaultBytesMessage1.putHeaders(new String(headerKeyByte), new String(headerValueByte));
+
                                 }
 
                             }
-
-
-                            for (int j = 0; j < flag;j++) {
-
-                                headerKeyByte[j] = header[j];
-
-                            }
-                            for (int p = 0,j = flag + 1;j<header.length;j++,p++) {
-
-                                headerValueByte[p] = header[j];
-
-
-                            }
-
-
-
-
-
-                          //   System.out.println(new String(headerKeyByte)+new String(headerValueByte));
-                            defaultBytesMessage1.putHeaders(new String(headerKeyByte), new String(headerValueByte));
                             seekChild++;
                         }
 
@@ -452,17 +460,15 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
                                     propertiesKeyByte = new byte[j];
                                      propertiesValueByte = new byte[properties.length - j - 1];
 
-                                }
 
-                            }
-                            for (int j = 0; j < flag;j++) {
+                            for (int q = 0; q < flag;q++) {
 
-                                    propertiesKeyByte[j] = properties[j];
+                                    propertiesKeyByte[q] = properties[q];
 
                                 }
-                                for (int p = 0,j = flag + 1;j<properties.length;j++,p++) {
+                                for (int p = 0,q = flag + 1;q<properties.length;q++,p++) {
 
-                                    propertiesValueByte[p] = properties[j];
+                                    propertiesValueByte[p] = properties[q];
 
 
                             }
@@ -474,6 +480,10 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
                           //  System.out.println(new String(propertiesKeyByte)+ new String(propertiesValueByte));
                             defaultBytesMessage1.putProperties(new String(propertiesKeyByte), new String(propertiesValueByte));
 
+
+                        }
+
+                            }
                             seekChild++;
                         }
 
