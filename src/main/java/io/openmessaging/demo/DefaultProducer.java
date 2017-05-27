@@ -28,7 +28,7 @@ public class DefaultProducer implements Producer {
 
 
 
-    @Override public BytesMessage createBytesMessageToTopic(String topic, byte[] body) {
+    @Override public synchronized BytesMessage createBytesMessageToTopic(String topic, byte[] body) {
 
 
 
@@ -42,14 +42,15 @@ public class DefaultProducer implements Producer {
             defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToQueue(topic, body);
 
 
-        }       String key= (String) properties.keySet().toArray()[0];
-
-        defaultBytesMessage.putProperties(key,properties.getString(key));
+        }
+        for (String  key :properties.keySet()) {
+            defaultBytesMessage.putProperties(key, properties.getString(key));
+        }
         return defaultBytesMessage;
 
     }
 
-    @Override public BytesMessage createBytesMessageToQueue(String queue, byte[] body) {
+    @Override public synchronized BytesMessage createBytesMessageToQueue(String queue, byte[] body) {
 
         DefaultBytesMessage defaultBytesMessage = null;
        if (queue.substring(0, queue.indexOf("_")).equals("TOPIC")) {
@@ -62,10 +63,11 @@ public class DefaultProducer implements Producer {
 
         }
 
-        String key= (String) properties.keySet().toArray()[0];
 
-        defaultBytesMessage.putProperties(key,properties.getString(key));
-        return defaultBytesMessage;
+
+        for (String  key :properties.keySet()) {
+            defaultBytesMessage.putProperties(key, properties.getString(key));
+        } return defaultBytesMessage;
     }
 
 
@@ -73,12 +75,23 @@ public class DefaultProducer implements Producer {
         return properties;
     }
 
-    @Override public void send(Message message) {
+    @Override public void send(Message defaultBytesMessag) {
+//
+//DefaultBytesMessage defaultBytesMessage = (DefaultBytesMessage) defaultBytesMessag;
+//        for (String s : defaultBytesMessage.headers().keySet()) {
+//            System.out.println(s+defaultBytesMessage.headers().getString(s));
+//        }
+//
+//        for (String s : defaultBytesMessage.properties().keySet()) {
+//            System.out.println(s+defaultBytesMessage.properties().getString(s));
+//        }
+//        String body = new String(defaultBytesMessage.getBody());
+//
+//        System.out.println(new String(body));
+//
+//        System.out.println("--------------------------------");
 
-
-
-
-            messageStore.putMessage((DefaultBytesMessage) message,properties);
+            messageStore.putMessage((DefaultBytesMessage) defaultBytesMessag,properties);
 
 
     }

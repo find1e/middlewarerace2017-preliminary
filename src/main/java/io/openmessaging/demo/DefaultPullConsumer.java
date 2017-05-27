@@ -39,23 +39,25 @@ public class DefaultPullConsumer implements PullConsumer {
     @Override public  Message poll() {
 
         DefaultBytesMessage defaultBytesMessage = null;
-try {
+
      defaultBytesMessage = messageStore.pullMessage(properties, threadId);
-}catch (Exception e){
-    System.out.println("kongzhi");
-}
 
+/*
+        if (defaultBytesMessage != null) {
+    for (String s : defaultBytesMessage.headers().keySet()) {
+        System.out.println(s + defaultBytesMessage.headers().getString(s));
+    }
 
-            if (atomicBoolean.compareAndSet(true,false)) {
-                      String headerKey = defaultBytesMessage.headers().keySet().iterator().next();
-            String headerValue = defaultBytesMessage.headers().getString(headerKey);
-            String propertiesKey = defaultBytesMessage.properties().keySet().iterator().next();
-            String propertiesValue = defaultBytesMessage.properties().getString(propertiesKey);
-            String body = new String(defaultBytesMessage.getBody());
+    for (String s : defaultBytesMessage.properties().keySet()) {
+        System.out.println(s + defaultBytesMessage.properties().getString(s));
+    }
+    String body = new String(defaultBytesMessage.getBody());
 
-                    System.out.println(headerKey+"-"+headerValue+"-"+propertiesKey+"-"+propertiesValue+"-"+new String(body));
-            }
+    System.out.println(new String(body));
 
+    System.out.println("++++++++++++++++++++++++++++");
+
+}*/
                 return defaultBytesMessage;
 
             }

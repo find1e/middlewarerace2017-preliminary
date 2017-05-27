@@ -53,12 +53,12 @@ public class MessageStore {
 
 
 
-    public synchronized byte[] serianized(DefaultBytesMessage message){
+    public  byte[] serianized(DefaultBytesMessage message){
 
         StringBuilder stringBuilder = new StringBuilder();
         for (String key : message.headers().keySet()){
             stringBuilder.append(key);
-            stringBuilder.append(":");
+            stringBuilder.append("%");
             stringBuilder.append(message.headers().getString(key));
             stringBuilder.append("#");
 
@@ -66,7 +66,7 @@ public class MessageStore {
         stringBuilder.append(SendConstants.cutChar);
         for (String propertiesKey : message.properties().keySet()) {
             stringBuilder.append(propertiesKey);
-            stringBuilder.append(":");
+            stringBuilder.append("%");
             stringBuilder.append(message.properties().getString(propertiesKey));
             stringBuilder.append("#");
 
@@ -89,7 +89,7 @@ public class MessageStore {
 
 
 
-    public void sendMessage(ByteBuffer byteBuffer,KeyValue properties){
+    public  void sendMessage(ByteBuffer byteBuffer,KeyValue properties){
         File file = new File(properties.getString("STORE_PATH") +"/"+atomicIntegerFileName.get());
 
         if (!file.exists()) {
@@ -206,6 +206,7 @@ public class MessageStore {
     }
 
 
+/*
     public static void main (String[] args) {
         MessageStore main = new MessageStore();
         DefaultBytesMessage defaultBytesMessage = new DefaultBytesMessage("hello".getBytes());
@@ -220,7 +221,7 @@ public class MessageStore {
         byte[] headerByte = null;
         byte[] propertiesByte = null;
         byte[] body = null;
-        String headerStirng = null;
+        String headerString = null;
         String propertiesString = null;
         for (int indexNum = 0;indexNum < buffBytes.length;indexNum++) {
 
@@ -247,8 +248,9 @@ public class MessageStore {
 
 
                             }
-                            headerStirng = new String(header);
-                            String[] headers = headerStirng.split(":");
+                            headerString = new String(header);
+                            System.out.println(headerString);
+                            String[] headers = headerString.split(":");
                             String headerKey = headers[0];
 
                             String headerValue = headers[1];
@@ -290,11 +292,14 @@ public class MessageStore {
                             }
                             propertiesString = new String(properties);
 
+                            System.out.println(properties);
                             String[] propertie = propertiesString.split(":");
                             String propertiesKey = propertie[0];
                             String propertiesValue = propertie[1];
-                          /*  System.out.println(propertiesKey);
-                            System.out.println(propertiesValue);*/
+                          */
+/*  System.out.println(propertiesKey);
+                            System.out.println(propertiesValue);*//*
+
                             defaultBytesMessage1.putProperties(propertiesKey,propertiesValue);
 
                             seekChild++;
@@ -336,6 +341,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
 
     }
+*/
     public synchronized void insertMessage(ByteBuffer byteBuffer){
         byteBuffer.flip();
         byte[] buffBytes = byteBuffer.array();
@@ -345,8 +351,8 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
         byte[] headerByte = null;
         byte[] propertiesByte = null;
         byte[] body = null;
-        String headerStirng = null;
-        String propertiesString = null;
+
+        String[] headers = null;
         DefaultBytesMessage defaultBytesMessage1 = new DefaultBytesMessage(null);
         for (int indexNum = 0;indexNum < buffBytes.length;indexNum++) {
 
@@ -373,15 +379,38 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
 
                             }
-                            headerStirng = new String(header);
-                            String[] headers = headerStirng.split(":");
-                            String headerKey = headers[0];
+                            byte[] headerKeyByte = null;
+                            byte[] headerValueByte = null;
+                            int flag = 0;
+                            for (int j = 0; j < header.length;j++) {
+                                if (header[j] == "%".getBytes()[0]) {
+                                    flag = j;
+                                    headerKeyByte = new byte[j];
+                                    headerValueByte = new byte[header.length - j - 1];
 
-                            String headerValue = headers[1];
-                          //  System.out.println(headerKey+headerValue);
-                            defaultBytesMessage1.putHeaders(headerKey,headerValue);
+                                }
+
+                            }
 
 
+                            for (int j = 0; j < flag;j++) {
+
+                                headerKeyByte[j] = header[j];
+
+                            }
+                            for (int p = 0,j = flag + 1;j<header.length;j++,p++) {
+
+                                headerValueByte[p] = header[j];
+
+
+                            }
+
+
+
+
+
+                          //   System.out.println(new String(headerKeyByte)+new String(headerValueByte));
+                            defaultBytesMessage1.putHeaders(new String(headerKeyByte), new String(headerValueByte));
                             seekChild++;
                         }
 
@@ -414,14 +443,36 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
 
                             }
-                            propertiesString = new String(properties);
+                            byte[] propertiesKeyByte = null;
+                            byte[] propertiesValueByte = null;
+                            int flag = 0;
+                            for (int j = 0; j < properties.length;j++) {
+                                if (properties[j] == "%".getBytes()[0]) {
+                                    flag = j;
+                                    propertiesKeyByte = new byte[j];
+                                     propertiesValueByte = new byte[properties.length - j - 1];
 
-                            String[] propertie = propertiesString.split(":");
-                            String propertiesKey = propertie[0];
-                            String propertiesValue = propertie[1];
+                                }
 
-                         //   System.out.println(propertiesKey+propertiesValue);
-                            defaultBytesMessage1.putProperties(propertiesKey,propertiesValue);
+                            }
+                            for (int j = 0; j < flag;j++) {
+
+                                    propertiesKeyByte[j] = properties[j];
+
+                                }
+                                for (int p = 0,j = flag + 1;j<properties.length;j++,p++) {
+
+                                    propertiesValueByte[p] = properties[j];
+
+
+                            }
+
+
+
+
+                          //  System.out.print(defaultBytesMessage1);
+                          //  System.out.println(new String(propertiesKeyByte)+ new String(propertiesValueByte));
+                            defaultBytesMessage1.putProperties(new String(propertiesKeyByte), new String(propertiesValueByte));
 
                             seekChild++;
                         }
@@ -488,6 +539,20 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
         }
 
     }
+
+    public synchronized void slipString (DefaultBytesMessage defaultBytesMessage1,byte[] header) {
+        String  headerStirng = new String(header);
+
+
+        int ind = headerStirng.indexOf("%");
+        //System.out.println(headerStirng);
+        String headerKey = headerStirng.substring(0,ind);
+        String  headerValue = headerStirng.substring(ind + 1,headerStirng.length() - ind - 1);
+
+        //  System.out.println(headerKey+headerValue);
+        defaultBytesMessage1.putHeaders(headerKey, headerValue);
+
+    }
     public synchronized DefaultBytesMessage pullMessage(KeyValue properties,int threadId) {
 
 
@@ -513,13 +578,13 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
             }
 
-        /*    String headerKey = defaultBytesMessage.headers().keySet().iterator().next();
+            /*String headerKey = defaultBytesMessage.headers().keySet().iterator().next();
             String headerValue = defaultBytesMessage.headers().getString(headerKey);
             String propertiesKey = defaultBytesMessage.properties().keySet().iterator().next();
             String propertiesValue = defaultBytesMessage.properties().getString(propertiesKey);
             String body = new String(defaultBytesMessage.getBody());*/
 
-       // System.out.println(defaultBytesMessage);
+        //System.out.println(defaultBytesMessage);
             return defaultBytesMessage;
         }
     }
