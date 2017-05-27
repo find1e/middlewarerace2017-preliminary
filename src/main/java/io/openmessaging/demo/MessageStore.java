@@ -23,6 +23,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class MessageStore {
 
@@ -48,6 +49,8 @@ public class MessageStore {
     private AtomicBoolean flushFlag = new AtomicBoolean(true);
 
     private Semaphore semaphore = new Semaphore(20);
+
+    private ReentrantLock reentrantLock = new ReentrantLock(true);
 
 
 
@@ -134,8 +137,9 @@ public class MessageStore {
     }
 
 
-    public synchronized void putMessage(DefaultBytesMessage message,KeyValue properties) {
+    public  void putMessage(DefaultBytesMessage message,KeyValue properties) {
 
+        reentrantLock.lock();
         byte[] messageByte = serianized(message);
 
         if (messageByte.length >= byteBuffer.remaining()) {
@@ -150,9 +154,10 @@ public class MessageStore {
         }
             byteBuffer.put(messageByte);
 
+        reentrantLock.unlock();
     }
 
-    public synchronized ByteBuffer deSerianied(KeyValue properties){
+    public  ByteBuffer deSerianied(KeyValue properties){
         File file = new File(properties.getString("STORE_PATH") +"/"+atomicIntegerFileName.getAndAdd(1));
         if (!file.exists()) {
             atomicBooleanOverFlag.compareAndSet(true,false);
@@ -528,9 +533,9 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
                     }
 
 
-                    if (++indexNum < buffBytes.length){
+                   // if ((indexNum + 1) < buffBytes.length){
                         defaultBytesMessage1 = new DefaultBytesMessage(null);
-                    }
+                    //}
                     cutCount = 0;
                 }
 
@@ -566,18 +571,20 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
     public synchronized DefaultBytesMessage pullMessage(KeyValue properties,int threadId) {
 
 
+        reentrantLock.lock();
         while (true) {
             Queue<DefaultBytesMessage> defaultBytesMessagesQueue = queueMap.get(threadId);
             DefaultBytesMessage defaultBytesMessage = defaultBytesMessagesQueue.poll();
 
             if (defaultBytesMessage == null && atomicBooleanOverFlag.get() == false) {
+                reentrantLock.unlock();
                 return null;
-
             }
             if (defaultBytesMessage == null && atomicBooleanOverFlag.get() == true) {
 
                 ByteBuffer byteBuffer = deSerianied(properties);
                 if (byteBuffer == null) {
+
 
 
                     continue;
@@ -594,6 +601,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
             String propertiesValue = defaultBytesMessage.properties().getString(propertiesKey);
             String body = new String(defaultBytesMessage.getBody());*/
 
+            reentrantLock.unlock();
         //System.out.println(defaultBytesMessage);
             return defaultBytesMessage;
         }
