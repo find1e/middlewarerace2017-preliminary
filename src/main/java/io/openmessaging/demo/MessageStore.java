@@ -63,9 +63,9 @@ public class MessageStore {
 
         String headerKey = message.headers().keySet().iterator().next();
         String headerValue = message.headers().getString(headerKey);
-        Iterator iterator = message.properties().keySet().iterator();
-        iterator.next();
-        String propertiesKey = (String) iterator.next();
+        String propertiesKey  = message.properties().keySet().iterator().next();
+
+
         String propertiesValue = message.properties().getString(propertiesKey);
         byte[] body = message.getBody();
         byte[] headerKeyByte = headerKey.getBytes();

@@ -31,9 +31,9 @@ public class DefaultProducer implements Producer {
 
 
         DefaultBytesMessage defaultBytesMessage= (DefaultBytesMessage) messageFactory.createBytesMessageToTopic(topic, body);
-        String key= (String) properties.keySet().toArray()[0];
+       /* String key= (String) properties.keySet().toArray()[1];
 
-        defaultBytesMessage.putProperties(key,properties.getString(key));
+        defaultBytesMessage.putProperties(key,properties.getString(key));*/
         return defaultBytesMessage;
 
     }
@@ -50,10 +50,10 @@ public class DefaultProducer implements Producer {
 
 
         }
+/*
+        String key= (String) properties.keySet().toArray()[1];
 
-        String key= (String) properties.keySet().toArray()[0];
-
-        defaultBytesMessage.putProperties(key,properties.getString(key));
+        defaultBytesMessage.putProperties(key,properties.getString(key));*/
         return defaultBytesMessage;
     }
 
