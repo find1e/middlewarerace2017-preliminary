@@ -93,6 +93,7 @@ public class MessageStore {
 
 
     public  void sendMessage(ByteBuffer byteBuffer,KeyValue properties){
+
         File file = new File(properties.getString("STORE_PATH") +"/"+atomicIntegerFileName.get());
 
         if (!file.exists()) {
@@ -139,9 +140,11 @@ public class MessageStore {
 
     public  void putMessage(DefaultBytesMessage message,KeyValue properties) {
 
-        reentrantLock.lock();
+
         byte[] messageByte = serianized(message);
 
+
+        reentrantLock.lock();
         if (messageByte.length >= byteBuffer.remaining()) {
             try {
                 semaphore.acquire();
@@ -149,6 +152,7 @@ public class MessageStore {
                 e.printStackTrace();
             }
             sendMessage(byteBuffer,properties);
+
 
             byteBuffer = ByteBuffer.allocate(SendConstants.buffSize);
         }
@@ -555,7 +559,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
     }
 
-    public synchronized void slipString (DefaultBytesMessage defaultBytesMessage1,byte[] header) {
+    public  void slipString (DefaultBytesMessage defaultBytesMessage1,byte[] header) {
         String  headerStirng = new String(header);
 
 
