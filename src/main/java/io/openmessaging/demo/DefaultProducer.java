@@ -9,14 +9,12 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class DefaultProducer implements Producer {
     private MessageFactory messageFactory = new DefaultMessageFactory();
     private MessageStore messageStore = MessageStore.getInstance();
     private KeyValue properties;
     private HashMap hashMap=new HashMap();
-
 
     public DefaultProducer(KeyValue properties) {
         this.properties = properties;
@@ -28,46 +26,35 @@ public class DefaultProducer implements Producer {
 
 
 
-    @Override public synchronized BytesMessage createBytesMessageToTopic(String topic, byte[] body) {
+    @Override public BytesMessage createBytesMessageToTopic(String topic, byte[] body) {
 
 
 
+        DefaultBytesMessage defaultBytesMessage= (DefaultBytesMessage) messageFactory.createBytesMessageToTopic(topic, body);
+        String key= (String) properties.keySet().toArray()[0];
 
-        DefaultBytesMessage defaultBytesMessage = null;
-        if (topic.substring(0, topic.indexOf("_")).equals("TOPIC")) {
-            defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToTopic(topic, body);
-        } else {
-
-
-            defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToQueue(topic, body);
-
-
-        }
-        for (String  key :properties.keySet()) {
-            defaultBytesMessage.putProperties(key, properties.getString(key));
-        }
+        defaultBytesMessage.putProperties(key,properties.getString(key));
         return defaultBytesMessage;
 
     }
 
-    @Override public synchronized BytesMessage createBytesMessageToQueue(String queue, byte[] body) {
+    @Override public BytesMessage createBytesMessageToQueue(String queue, byte[] body) {
 
         DefaultBytesMessage defaultBytesMessage = null;
-       if (queue.substring(0, queue.indexOf("_")).equals("TOPIC")) {
-           defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToTopic(queue, body);
+       if (queue.substring(0, queue.indexOf("_")).equals("QUEUE")) {
+
+            defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToQueue(queue, body);
         } else {
 
-
-           defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToQueue(queue, body);
+            defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToTopic(queue, body);
 
 
         }
 
+        String key= (String) properties.keySet().toArray()[0];
 
-
-        for (String  key :properties.keySet()) {
-            defaultBytesMessage.putProperties(key, properties.getString(key));
-        } return defaultBytesMessage;
+        defaultBytesMessage.putProperties(key,properties.getString(key));
+        return defaultBytesMessage;
     }
 
 
@@ -75,23 +62,12 @@ public class DefaultProducer implements Producer {
         return properties;
     }
 
-    @Override public void send(Message defaultBytesMessag) {
-//
-//DefaultBytesMessage defaultBytesMessage = (DefaultBytesMessage) defaultBytesMessag;
-//        for (String s : defaultBytesMessage.headers().keySet()) {
-//            System.out.println(s+defaultBytesMessage.headers().getString(s));
-//        }
-//
-//        for (String s : defaultBytesMessage.properties().keySet()) {
-//            System.out.println(s+defaultBytesMessage.properties().getString(s));
-//        }
-//        String body = new String(defaultBytesMessage.getBody());
-//
-//        System.out.println(new String(body));
-//
-//        System.out.println("--------------------------------");
+    @Override public void send(Message message) {
 
-            messageStore.putMessage((DefaultBytesMessage) defaultBytesMessag,properties);
+
+
+
+            messageStore.putMessage((DefaultBytesMessage) message,properties);
 
 
     }

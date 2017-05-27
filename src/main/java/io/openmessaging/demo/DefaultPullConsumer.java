@@ -12,7 +12,6 @@ import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -24,7 +23,7 @@ public class DefaultPullConsumer implements PullConsumer {
     private Set<String> buckets = new HashSet<>();
     private List<String> bucketList = new ArrayList<>();
     private int threadId = 0;
-    private AtomicBoolean atomicBoolean = new AtomicBoolean(true);
+
 
     // int remain;
     public DefaultPullConsumer(KeyValue properties) {
@@ -38,26 +37,14 @@ public class DefaultPullConsumer implements PullConsumer {
 
     @Override public  Message poll() {
 
-        DefaultBytesMessage defaultBytesMessage = null;
 
-     defaultBytesMessage = messageStore.pullMessage(properties, threadId);
+               DefaultBytesMessage defaultBytesMessage= messageStore.pullMessage(properties,threadId);
 
-/*
-        if (defaultBytesMessage != null) {
-    for (String s : defaultBytesMessage.headers().keySet()) {
-        System.out.println(s + defaultBytesMessage.headers().getString(s));
-    }
 
-    for (String s : defaultBytesMessage.properties().keySet()) {
-        System.out.println(s + defaultBytesMessage.properties().getString(s));
-    }
-    String body = new String(defaultBytesMessage.getBody());
 
-    System.out.println(new String(body));
 
-    System.out.println("++++++++++++++++++++++++++++");
+            //    System.out.println(headerKey+headerValue+propertiesKey+propertiesValue);
 
-}*/
                 return defaultBytesMessage;
 
             }
