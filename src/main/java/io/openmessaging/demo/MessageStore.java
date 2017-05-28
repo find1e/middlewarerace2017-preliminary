@@ -772,7 +772,6 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
             }
 
-            atomicIntegerFileName.set(0);
             System.out.println("wwwwwwwwwwww");
         }
            }
