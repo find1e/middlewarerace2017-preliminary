@@ -2,10 +2,7 @@ package io.openmessaging.demo;
 
 import io.openmessaging.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class DemoTester {
 
@@ -26,26 +23,42 @@ public class DemoTester {
         //构造测试数据
         String topic1 = "TOPIC_1"; //实际测试时大概会有100个Topic左右
         String topic2 = "TOPIC_2"; //实际测试时大概会有100个Topic左右
-        String queue1 = "QUEUE_1"; //实际测试时，queue数目与消费线程数目相同
+        //String queue1 = "QUEUE_1"; //实际测试时，queue数目与消费线程数目相同
         String queue2 = "QUEUE_2"; //实际测试时，queue数目与消费线程数目相同
         List<DefaultBytesMessage> messagesForTopic1 = new ArrayList<>(1024);
         List<DefaultBytesMessage> messagesForTopic2 = new ArrayList<>(1024);
-        List<DefaultBytesMessage> messagesForQueue1 = new ArrayList<>(1024);
+      //  List<DefaultBytesMessage> messagesForQueue1 = new ArrayList<>(1024);
         List<DefaultBytesMessage> messagesForQueue2 = new ArrayList<>(1024);
-        for (int i = 0; i < 20000; i++) {
+        for (int i = 0; i < 1024; i++) {
             //注意实际比赛可能还会向消息的headers或者properties里面填充其它内容
-            messagesForTopic1.add((DefaultBytesMessage) producer.createBytesMessageToTopic(topic1, (topic1 + i).getBytes()));
-            messagesForTopic2.add((DefaultBytesMessage) producer.createBytesMessageToTopic(topic2, (topic2 + i).getBytes()));
-            messagesForQueue1.add((DefaultBytesMessage) producer.createBytesMessageToQueue(queue1, (queue1 + i).getBytes()));
-            messagesForQueue2.add((DefaultBytesMessage) producer.createBytesMessageToQueue(queue2, (queue2 + i).getBytes()));
-        }
+            DefaultBytesMessage defaultBytesMessage = (DefaultBytesMessage) producer.createBytesMessageToTopic(topic1, (topic1 + i).getBytes());
+            defaultBytesMessage.putHeaders("id","hello");
+
+            defaultBytesMessage.putProperties("id"," are you ok");
+            messagesForTopic1.add(defaultBytesMessage);
+            DefaultBytesMessage defaultBytesMessage1 = (DefaultBytesMessage) producer.createBytesMessageToTopic(topic2, (topic2 + i).getBytes());
+            defaultBytesMessage1.putHeaders("id","hello");
+            defaultBytesMessage1.putProperties("id"," are you ok");
+            messagesForTopic2.add(defaultBytesMessage1);
+
+          /*  DefaultBytesMessage defaultBytesMessage2 =(DefaultBytesMessage) producer.createBytesMessageToQueue(queue1, (queue1 + i).getBytes());
+            defaultBytesMessage2.putHeaders("id","hello");
+
+            defaultBytesMessage.putProperties("id"," are you ok");
+            messagesForQueue1.add(defaultBytesMessage2);
+*/
+            DefaultBytesMessage defaultBytesMessage3 =(DefaultBytesMessage) producer.createBytesMessageToQueue(queue2, (queue2 + i).getBytes());
+            defaultBytesMessage3.putHeaders("id","hello");
+
+            defaultBytesMessage3.putProperties("id"," are you ok");
+            messagesForQueue2.add(defaultBytesMessage3); }
 
         long start = System.currentTimeMillis();
         //发送, 实际测试时，会用多线程来发送, 每个线程发送自己的Topic和Queue
-        for (int i = 0; i < 20000; i++) {
+        for (int i = 0; i < 1024; i++) {
             producer.send(messagesForTopic1.get(i));
             producer.send(messagesForTopic2.get(i));
-            producer.send(messagesForQueue1.get(i));
+        //    producer.send(messagesForQueue1.get(i));
             producer.send(messagesForQueue2.get(i));
 
         }
@@ -75,17 +88,32 @@ public class DemoTester {
                 String topic = message.headers().getString(MessageHeader.TOPIC);
                 String queue = message.headers().getString(MessageHeader.QUEUE);
                 //实际测试时，会一一比较各个字段
+                //实际测试时，会一一比较各个字段
                 if (topic != null) {
                     if (topic.equals(topic1)) {
-                        System.out.println("topic1"+compare(messagesForTopic1.get(topic1Offset++), message));
+                        DefaultBytesMessage defaultBytesMessage = messagesForTopic1.get(topic1Offset++);
+
+                       // System.out.println(defaultBytesMessage.headers().getString("id"));
+
+                        System.out.println("topic1"+compare(defaultBytesMessage, message));
                     } else {
                         //Assert.assertEquals(topic2, topic);
-                        System.out.println("topic2"+compare(messagesForTopic2.get(topic2Offset++), message));
+                        DefaultBytesMessage defaultBytesMessage = messagesForTopic2.get(topic2Offset++);
+
+                        //System.out.println(defaultBytesMessage.headers().getString("id"));
+
+                        System.out.println("topic2"+compare(defaultBytesMessage, message));
+
                     }
                 } else {
+                    DefaultBytesMessage defaultBytesMessage = messagesForQueue2.get(queue2Offset++);
+
+
+                   // System.out.println(defaultBytesMessage.headers().getString("id") );
+
+                    System.out.println("queue2"+compare(defaultBytesMessage, message));
 
                     //Assert.assertEquals(queue2, queue);
-                    System.out.println("queue1"+compare(messagesForQueue2.get(queue2Offset++), message));
                 }
             }
             long endConsumer = System.currentTimeMillis();
@@ -95,7 +123,7 @@ public class DemoTester {
 
 
         //消费样例1，实际测试时会Kill掉发送进程，另取进程进行消费
-        {
+      /*  {
             PullConsumer consumer1 = new DefaultPullConsumer(properties);
             consumer1.attachQueue(queue1, Collections.singletonList(topic1));
 
@@ -135,47 +163,66 @@ public class DemoTester {
             long T2 = endConsumer - startConsumer;
             System.out.println(String.format("Team1 cost:%d ms tps:%d q/ms", T2 + T1, (queue1Offset + topic1Offset)/(T1 + T2)));
 
-        }
+        }*/
         //消费样例2，实际测试时会Kill掉发送进程，另取进程进行消费
 
     }
     public static boolean compare(DefaultBytesMessage defaultBytesMessage1, DefaultBytesMessage defaultBytesMessage2) {
-        KeyValue headers = defaultBytesMessage1.headers();
-        String key= (String) headers.keySet().toArray()[0];
-        String value=headers.getString(key);
-        KeyValue properties = defaultBytesMessage1.properties();
-        String key11 =(String) properties.keySet().toArray()[0];
-        String value11=properties.getString(key11);
+
+
+
         byte[] body = defaultBytesMessage1.getBody();
 
 
-        KeyValue headers2 = defaultBytesMessage2.headers();
-        String key2= (String) headers2.keySet().toArray()[0];
-        String value2=headers.getString(key);
-        KeyValue properties2 = defaultBytesMessage2.properties();
-        String key22 = (String) properties2.keySet().toArray()[0];
-        String value22=properties2.getString(key22);
+
         byte[] body2 = defaultBytesMessage2.getBody();
-        if(!key.equals(key2)){
-            return false;
-        }
-        if(!key11.equals(key22)){
-            return false;
-        }
-        if(!value.equals(value2)){
-            return false;
 
-        }
-        if(!value11.equals(value22)){
-            return false;
-
-        }
         for(int indexNum=0;indexNum<body.length;indexNum++){
             if(body[indexNum]!=body2[indexNum]){
                 return false;
 
             }
         }
+
+
+       Iterator iterator = defaultBytesMessage1.headers().keySet().iterator();
+            Iterator iterator1 = defaultBytesMessage2.headers().keySet().iterator();
+
+            while (iterator.hasNext() || iterator1.hasNext()) {
+                String s1 = (String) iterator.next();
+                String s2 = (String) iterator1.next();
+                if (!s1.equals(s2)) {
+                    return false;
+
+                }
+                if (!defaultBytesMessage1.headers().getString(s1).equals(defaultBytesMessage2.headers().getString(s2)))
+
+                {
+                    return false;
+                }
+
+
+        }
+
+        Iterator i = defaultBytesMessage1.properties().keySet().iterator();
+        Iterator i1 = defaultBytesMessage2.properties().keySet().iterator();
+
+        while (i.hasNext() || i1.hasNext()) {
+            String s1 = (String) i.next();
+            String s2 = (String) i1.next();
+            if (!s1.equals(s2)) {
+                return false;
+
+            }
+            if (!defaultBytesMessage1.properties().getString(s1).equals(defaultBytesMessage2.properties().getString(s2)))
+
+            {
+                return false;
+            }
+
+
+        }
+
 
 
         return true;
