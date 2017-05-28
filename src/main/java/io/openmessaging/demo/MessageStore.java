@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
@@ -29,7 +30,7 @@ public class MessageStore {
 
     private static final MessageStore INSTANCE = new MessageStore();
 
-    private Map<String,QueueProxy>  map = new HashMap();
+   // private Map<String,QueueProxy>  map = new HashMap();
     public static MessageStore getInstance() {
         return INSTANCE;
     }
@@ -46,12 +47,19 @@ public class MessageStore {
 
     private AtomicBoolean flushFlag = new AtomicBoolean(true);
 
-    private Semaphore semaphore = new Semaphore(20,true);
+    private Semaphore semaphore = new Semaphore(10,true);
 
-    private ReentrantLock reentrantLock = new ReentrantLock(true);
+   // private ReentrantLock reentrantLock = new ReentrantLock(true);
 
-    private ByteBuffer byteBuffer = ByteBuffer.allocate(SendConstants.buffSize);
+    private ByteBuffer byteBuffer = null;
 
+    private AtomicBoolean atomicBoolean = new AtomicBoolean(true);
+
+   // private AtomicBoolean insertFlag = new AtomicBoolean(true);
+
+    private MessageStore() {
+       byteBuffer = ByteBuffer.allocate(SendConstants.buffSize);
+    }
 
     public  byte[] serianized(DefaultBytesMessage message){
 
@@ -210,7 +218,7 @@ public class MessageStore {
 
         }
 */
-    public  ByteBuffer deSerianied(KeyValue properties){
+    public  synchronized ByteBuffer deSerianied(KeyValue properties){
         File file = new File(properties.getString("STORE_PATH") +"/"+atomicIntegerFileName.getAndAdd(1));
         if (!file.exists()) {
             atomicBooleanOverFlag.compareAndSet(true,false);
@@ -401,7 +409,9 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
     }
 */
-    public synchronized void insertMessage(ByteBuffer byteBuffer){
+    public  synchronized void insertMessage(ByteBuffer byteBuffer){
+
+
         //byteBuffer.flip();
         byte[] buffBytes = byteBuffer.array();
 
@@ -482,7 +492,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
                                     }
 
-                                    String s = new String (new String(headerKeyByte));
+                                  //  String s = new String (new String(headerKeyByte));
                                     /*if (s.length() <2) {
 
                                         System.out.print(new String(headerByte));
@@ -612,6 +622,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
                     }
                     Queue queue = null;
+
                     for (int id : list) {
 
                         queue = queueMap.get(id);
@@ -654,13 +665,14 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
         defaultBytesMessage1.putHeaders(headerKey, headerValue);
 
     }
-    public synchronized DefaultBytesMessage pullMessage(KeyValue properties,int threadId) {
+    public  synchronized DefaultBytesMessage pullMessage(KeyValue properties,int threadId) {
 
 
 
-
+        Queue<DefaultBytesMessage> defaultBytesMessagesQueue = queueMap.get(threadId);
         while (true) {
-            Queue<DefaultBytesMessage> defaultBytesMessagesQueue = queueMap.get(threadId);
+
+
             DefaultBytesMessage defaultBytesMessage = defaultBytesMessagesQueue.poll();
 
             if (defaultBytesMessage == null && atomicBooleanOverFlag.get() == false) {
@@ -668,6 +680,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
                 return null;
             }
             if (defaultBytesMessage == null && atomicBooleanOverFlag.get() == true) {
+
 
                 ByteBuffer byteBuffer = deSerianied(properties);
                 if (byteBuffer == null) {
@@ -677,6 +690,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
                     continue;
                 }
                 insertMessage(byteBuffer);
+
 
                 continue;
 
@@ -693,10 +707,11 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
         }
     }
 
-    public synchronized void attachInit(Collection<String> topics,String queue,KeyValue properties,int threadId){
+    public  void attachInit(Collection<String> topics,String queue,KeyValue properties,int threadId){
 
 
 
+        byteBuffer = null;
 
             queueMap.put(threadId,new LinkedList<DefaultBytesMessage>());
 
@@ -717,6 +732,9 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
             listTopic.add(threadId);
 
         }
+
+
+
         /*
         QueueProxy queueProxyQueue = new QueueProxy();
         map.put(queue,queueProxyQueue);
