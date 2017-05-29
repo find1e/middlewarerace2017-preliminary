@@ -39,7 +39,7 @@ public class MessageStore {
 
     private AtomicBoolean atomicBooleanOverFlag = new AtomicBoolean(true);
 
-    private HashMap<String,List<Integer>> threadIdMap =new HashMap();
+    private HashMap<String,List<Integer>> threadIdMap =new HashMap(110);
 
     private AtomicInteger atomicIntegerThreadId = new AtomicInteger(1);
 
@@ -47,7 +47,7 @@ public class MessageStore {
 
     private AtomicBoolean flushFlag = new AtomicBoolean(true);
 
-    private Semaphore semaphore = new Semaphore(1,true);
+    private Semaphore semaphore = new Semaphore(1);
 
    // private ReentrantLock reentrantLock = new ReentrantLock(true);
 
@@ -55,7 +55,7 @@ public class MessageStore {
 
     private AtomicBoolean atomicBoolean = new AtomicBoolean(true);
 
-    private Semaphore readSemaphore = new Semaphore(1,true);
+    private Semaphore readSemaphore = new Semaphore(1);
 
    // private AtomicBoolean insertFlag = new AtomicBoolean(true);
 
