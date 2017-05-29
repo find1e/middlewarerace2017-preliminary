@@ -25,6 +25,7 @@ public class DefaultPullConsumer implements PullConsumer {
     private List<String> bucketList = new ArrayList<>();
     private int threadId = 0;
     private AtomicBoolean atomicBoolean = new AtomicBoolean(true);
+    DefaultBytesMessage defaultBytesMessage = null;
 
     // int remain;
     public DefaultPullConsumer(KeyValue properties) {
@@ -38,7 +39,7 @@ public class DefaultPullConsumer implements PullConsumer {
 
     @Override public  Message poll() {
 
-        DefaultBytesMessage defaultBytesMessage = null;
+
 
      defaultBytesMessage = messageStore.pullMessage(properties, threadId);
 

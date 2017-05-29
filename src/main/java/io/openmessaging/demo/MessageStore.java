@@ -43,11 +43,11 @@ public class MessageStore {
 
     private AtomicInteger atomicIntegerThreadId = new AtomicInteger(1);
 
-    private HashMap<Integer,LinkedList<DefaultBytesMessage>> queueMap = new HashMap(20);
+    private HashMap<Integer,Queue<DefaultBytesMessage>> queueMap = new HashMap(20);
 
     private AtomicBoolean flushFlag = new AtomicBoolean(true);
 
-    private Semaphore semaphore = new Semaphore(20,true);
+    private Semaphore semaphore = new Semaphore(1,true);
 
    // private ReentrantLock reentrantLock = new ReentrantLock(true);
 
@@ -56,10 +56,6 @@ public class MessageStore {
     private AtomicBoolean atomicBoolean = new AtomicBoolean(true);
 
     private Semaphore readSemaphore = new Semaphore(1,true);
-
-    AsynchronousFileChannel asynchronousFileChannel = null;
-
-    private AtomicInteger atomicIntegerFilaPosition = new AtomicInteger(0);
 
    // private AtomicBoolean insertFlag = new AtomicBoolean(true);
 
@@ -102,7 +98,6 @@ public class MessageStore {
 
         }
         messageByte[messageByte.length - 1] = SendConstants.cutFlag;
-        String s = new String(messageByte);
 
         return messageByte;
     }
@@ -115,37 +110,44 @@ public class MessageStore {
 
 
         byteBuffer.flip();
-        if (asynchronousFileChannel == null ) {
-            File file = new File(properties.getString("STORE_PATH") + "/" + 1);
+        File file = new File(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.get());
 
-            if (!file.exists()) {
-                try {
-                    file.createNewFile();
-                } catch (IOException e) {
-                    e.printStackTrace();
+        if (!file.exists()) {
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
 
-                }
             }
-            Path path = Paths.get(properties.getString("STORE_PATH") + "/" + 1);
+        }
 
+            Path path = Paths.get(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.getAndAdd(1));
+            AsynchronousFileChannel asynchronousFileChannel = null;
             try {
                 asynchronousFileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.WRITE);
             } catch (IOException e) {
                 e.printStackTrace();
             }
 
-        }
-
-            asynchronousFileChannel.write(byteBuffer,atomicIntegerFilaPosition.getAndAdd(SendConstants.buffSize), asynchronousFileChannel, new CompletionHandler<Integer, AsynchronousFileChannel>() {
+            asynchronousFileChannel.write(byteBuffer, 0, asynchronousFileChannel, new CompletionHandler<Integer, AsynchronousFileChannel>() {
             @Override
             public void completed(Integer result, AsynchronousFileChannel attachment) {
-
+                try {
+                    attachment.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 semaphore.release();
             }
 
             @Override
             public void failed(Throwable exc, AsynchronousFileChannel attachment) {
 
+                try {
+                    attachment.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 semaphore.release();
             }
         });
@@ -221,45 +223,57 @@ public class MessageStore {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        File file = new File(properties.getString("STORE_PATH") +"/"+atomicIntegerFileName.get());
+        if (!file.exists()) {
 
 
-        ByteBuffer resultBuffer = byteBuffer;
-        byteBuffer = ByteBuffer.allocate(SendConstants.buffSize);
-
-
-        try {
-            asynchronousFileChannel.read(byteBuffer, atomicIntegerFilaPosition.getAndAdd(SendConstants.buffSize), asynchronousFileChannel, new CompletionHandler<Integer, AsynchronousFileChannel>() {
-                @Override
-                public void completed(Integer result, AsynchronousFileChannel attachment) {
-
-
-                    readSemaphore.release();
-                }
-
-                @Override
-                public void failed(Throwable exc, AsynchronousFileChannel attachment) {
-
-
-                    readSemaphore.release();
-
-                }
-            });
-        }catch (Exception e){
-            System.out.println("out of file index");
-
-
-            atomicBooleanOverFlag.compareAndSet(true, false);
+            atomicBooleanOverFlag.compareAndSet(true,false);
             ByteBuffer result = byteBuffer;
             result.flip();
             byteBuffer = null;
             readSemaphore.release();
-            return null;
+            return result;
         }
 
-        resultBuffer.flip();
+        ByteBuffer resultBuffer = byteBuffer;
+        byteBuffer = ByteBuffer.allocate(SendConstants.buffSize);
+        Path path = Paths.get(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.getAndAdd(1));
+        AsynchronousFileChannel asynchronousFileChannel = null;
+        try {
+            asynchronousFileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.READ);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+        asynchronousFileChannel.read(byteBuffer, 0, asynchronousFileChannel, new CompletionHandler<Integer, AsynchronousFileChannel>() {
+            @Override
+            public void completed(Integer result, AsynchronousFileChannel attachment) {
+                try {
+                    attachment.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                readSemaphore.release();
+            }
+
+            @Override
+            public void failed(Throwable exc, AsynchronousFileChannel attachment) {
+
+                try {
+                    attachment.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                readSemaphore.release();
+            }
+        });
+
+
+       resultBuffer.flip();
         return resultBuffer;
     }
-
 
 
 /*
@@ -610,7 +624,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
                         threadIdMap.put(bucket,list);
 
                     }
-                    LinkedList<DefaultBytesMessage> queue = null;
+                    Queue queue = null;
 
                     for (int id : list) {
 
@@ -658,7 +672,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
 
 
-        LinkedList<DefaultBytesMessage> defaultBytesMessagesQueue = queueMap.get(threadId);
+        Queue<DefaultBytesMessage> defaultBytesMessagesQueue = queueMap.get(threadId);
         while (true) {
 
 
@@ -722,40 +736,62 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
         }
 
         if (flushFlag.compareAndSet(true,false)) {
+            FileInputStream fileInputStream = null;
+            try {
+                fileInputStream = new FileInputStream(properties.getString("STORE_PATH")+"/"+atomicIntegerFileName.getAndAdd(1));
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+            FileChannel fileChannel = fileInputStream.getChannel();
+            try {
+                fileChannel.read(byteBuffer);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            try {
+            fileChannel.close();
 
-            if (asynchronousFileChannel == null) {
-                Path path = Paths.get(properties.getString("STORE_PATH") + "/" + 1);
-
-
-                try {
-                    asynchronousFileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.READ);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
+            fileInputStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
 
-            Future future = asynchronousFileChannel.read(byteBuffer, atomicIntegerFilaPosition.getAndAdd(SendConstants.buffSize));
-            while (!future.isDone()) ;
 
-        }
+        }                               }
 
 
 
-    }
    public void flush(KeyValue properties) {
 
         if (flushFlag.compareAndSet(true,false)) {
            // System.out.println("111");
+            File file = new File(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.get());
 
+            if (!file.exists()) {
+                try {
+                    file.createNewFile();
+                } catch (IOException e) {
+                    e.printStackTrace();
+
+                }
+            }
             if (byteBuffer.hasRemaining()) {
-
+                Path path = Paths.get(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.getAndAdd(1));
+                AsynchronousFileChannel asynchronousFileChannel = null;
+                try {
+                    asynchronousFileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.WRITE);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 byteBuffer.flip();
-                Future future = asynchronousFileChannel.write(byteBuffer, atomicIntegerFilaPosition.getAndAdd(SendConstants.buffSize));
-
+                Future future = asynchronousFileChannel.write(byteBuffer, 0);
 
                 while (!future.isDone()) ;
-
+                try {
+                    asynchronousFileChannel.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
 
             }
 

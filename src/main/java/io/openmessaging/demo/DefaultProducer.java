@@ -15,7 +15,8 @@ public class DefaultProducer implements Producer {
     private MessageFactory messageFactory = new DefaultMessageFactory();
     private MessageStore messageStore = MessageStore.getInstance();
     private KeyValue properties;
-    private HashMap hashMap=new HashMap();
+
+    DefaultBytesMessage defaultBytesMessage = null;
 
 
     public DefaultProducer(KeyValue properties) {
@@ -33,7 +34,7 @@ public class DefaultProducer implements Producer {
 
 
 
-        DefaultBytesMessage defaultBytesMessage = null;
+
         if (topic.substring(0, topic.indexOf("_")).equals("TOPIC")) {
             defaultBytesMessage = (DefaultBytesMessage) messageFactory.createBytesMessageToTopic(topic, body);
         } else {
