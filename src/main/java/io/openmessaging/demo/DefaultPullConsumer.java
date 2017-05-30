@@ -24,7 +24,6 @@ public class DefaultPullConsumer implements PullConsumer {
     private Set<String> buckets = new HashSet<>();
     private List<String> bucketList = new ArrayList<>();
     private int threadId = 0;
-    private AtomicBoolean atomicBoolean = new AtomicBoolean(true);
     DefaultBytesMessage defaultBytesMessage = null;
 
     // int remain;
