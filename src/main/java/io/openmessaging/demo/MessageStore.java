@@ -707,7 +707,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
             }
 
 
-            if (indexNum<= buffBytes.length-10 && buffBytes[indexNum] != SendConstants.cutFlag) {
+            if (indexNum<= buffBytes.length- 2 && buffBytes[indexNum] != SendConstants.cutFlag) {
                 defaultBytesMessage = new DefaultBytesMessage(null);
             }else {
                 break;
