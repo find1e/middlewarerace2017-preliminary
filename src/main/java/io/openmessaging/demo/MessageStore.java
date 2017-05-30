@@ -168,7 +168,7 @@ public class MessageStore {
         }
 
 
-        byte len = (byte) body.length;
+        int len =  body.length;
         int j=0;//j��ʾ�������ٸ��ֽ�
 
         if(len>255){
