@@ -136,8 +136,9 @@ public class MessageStore {
             int len2 =  headerValueByte[ind].length;
             int j=0;//j��ʾ�������ٸ��ֽ�
 
-            if(len2>255){
-                j=len2/255;
+            if(len2>127){
+                j = len2/127;
+                len2 = len2%127;
             }
 
             messageByte[num++] = (byte) j;
@@ -164,11 +165,10 @@ public class MessageStore {
 
             int len2 =  propertiesValueByte[ind].length;
             int j=0;//j��ʾ�������ٸ��ֽ�
-
-            if(len2>255){
-                j=len2/255;
+            if(len2>127){
+                j = len2/127;
+                len2 = len2%127;
             }
-
             messageByte[num++] = (byte) j;
             messageByte[num++] = (byte) len2;
             for (int check2 = 0;check2 < propertiesValueByte[ind].length;check2++) {
@@ -182,8 +182,9 @@ public class MessageStore {
         int len =  body.length;
         int j=0;//j��ʾ�������ٸ��ֽ�
 
-        if(len>255){
-            j=len/255;
+        if(len>127){
+            j = len/127;
+            len = len%127;
         }
 
         messageByte[num++] = (byte) j;
@@ -562,15 +563,15 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
                 byte len1 = buffBytes[indexNum++];
                 int headerVLen = 0;
                 if (len1 != 0) {
-                    int temp = len1 * 255;
+                    int temp = len1 * 127;
 
                     headerVLen += temp;
                 }
-                if (buffBytes[indexNum] < 0) {
-                    headerVLen -= buffBytes[indexNum++];
-                }else {
+
+
+
                     headerVLen += buffBytes[indexNum++];
-                }
+
 
 
 
@@ -594,15 +595,15 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
                 byte len1 = buffBytes[indexNum++];
                 int propertiesVLen = 0;
                 if (len1 != 0) {
-                    int temp = len1 * 255;
+                    int temp = len1 * 127;
 
                     propertiesVLen += temp;
                 }
-                if (buffBytes[indexNum] < 0) {
-                    propertiesVLen -= buffBytes[indexNum++];
-                }else {
-                    propertiesVLen += buffBytes[indexNum++];
-                }
+
+
+
+                propertiesVLen += buffBytes[indexNum++];
+
                 byte[] propertiesValueByte = new byte[propertiesVLen];
                 for (int propertiesValueIndex = 0; propertiesValueIndex < propertiesVLen; propertiesValueIndex++) {
                     propertiesValueByte[propertiesValueIndex] = buffBytes[indexNum++];
@@ -612,18 +613,18 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
                 defaultBytesMessage.putProperties(new String(propertiesKeyByte), new String(propertiesValueByte));
             }
 
+
             byte len1 = buffBytes[indexNum++];
             int bodyLen = 0;
             if (len1 != 0) {
-                int temp = len1 * 255;
+                int temp = len1 * 127;
 
-                bodyLen += temp;
+                bodyLen+= temp;
             }
-            if (buffBytes[indexNum] < 0) {
-                bodyLen -= buffBytes[indexNum++];
-            }else {
-                bodyLen += buffBytes[indexNum++];
-            }
+
+
+
+            bodyLen += buffBytes[indexNum++];
 
             byte[] body2 = new byte[bodyLen];
             for (int indexBody = 0; indexBody < bodyLen; indexBody++) {
