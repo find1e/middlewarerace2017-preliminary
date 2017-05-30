@@ -125,7 +125,7 @@ public class MessageStore {
 
 
 
-        byte[] messageByte = new byte[length + 3];
+        byte[] messageByte = new byte[length + 4];
         int num = 0;
         messageByte[num++] = (byte)headNum;
         messageByte[num++] = (byte)propertiesNum;
@@ -169,7 +169,15 @@ public class MessageStore {
 
 
         byte len = (byte) body.length;
-        messageByte[num++] = len;
+        int j=0;//j��ʾ�������ٸ��ֽ�
+
+        if(len>255){
+            j=len/255;
+        }
+
+        messageByte[num++] = (byte) j;
+        messageByte[num++] = (byte) len;
+
         for (int bodyIndex = 0; bodyIndex < body.length;bodyIndex++) {
             messageByte[num++] = body[bodyIndex];
         }
@@ -488,7 +496,24 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
         System.out.println(new String(defaultBytesMessage1.getBody()));
 
 
-    }
+    } byte[] lenFlag = preBuff.array();
+            int len = 0;
+            if (lenFlag[0] != 0) {
+                int temp = lenFlag[0] * 255;
+                len += temp;
+            }
+            len += lenFlag[1];
+
+
+            int j=0;//j��ʾ�������ٸ��ֽ�
+        byte[] lenFlag=new byte[2];
+        if(length>255){
+            j=length/255;
+        }
+
+        lenFlag[0]= (byte) j;
+        lenFlag[1]= (byte) length;
+
 */
     public  synchronized void insertMessage(ByteBuffer byteBuffer) {
 
@@ -550,8 +575,15 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
                 defaultBytesMessage.putProperties(new String(propertiesKeyByte), new String(propertiesValueByte));
             }
+
+            byte len1 = buffBytes[indexNum++];
             int bodyLen = 0;
-            bodyLen = buffBytes[indexNum++];
+            if (len1 != 0) {
+                int temp = len1 * 255;
+                bodyLen += temp;
+            }
+            bodyLen += buffBytes[indexNum++];
+
 
             byte[] body2 = new byte[bodyLen];
             for (int indexBody = 0; indexBody < bodyLen; indexBody++) {
@@ -721,6 +753,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+                byteBuffer.put(SendConstants.cutFlag);
                 byteBuffer.flip();
                 Future future = asynchronousFileChannel.write(byteBuffer, 0);
 
