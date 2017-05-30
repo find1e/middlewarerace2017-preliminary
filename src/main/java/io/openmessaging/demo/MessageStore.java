@@ -102,7 +102,7 @@ public class MessageStore {
         for (byte[] b : headerValueByte) {
             length += b.length;
 
-            length = length + 2;
+            length = length + 3;
         }
         for (byte[] b : propertiesKeyByte) {
             length += b.length;
@@ -111,12 +111,12 @@ public class MessageStore {
         for (byte[] b : propertiesValueByte) {
             length += b.length;
 
-            length = length + 2;
+            length = length + 3;
         }
 
 
 
-        byte[] messageByte = new byte[length + 4];
+        byte[] messageByte = new byte[length + 5];
         int num = 0;
         messageByte[num++] = (byte)headNum;
         messageByte[num++] = (byte)propertiesNum;
@@ -136,11 +136,18 @@ public class MessageStore {
             int len2 =  headerValueByte[ind].length;
             int j=0;//j��ʾ�������ٸ��ֽ�
 
+            int h=0;
+
+            if(len2>16129){
+                h = len2/16129;
+                len2 = len2%16129;
+            }
             if(len2>127){
                 j = len2/127;
                 len2 = len2%127;
             }
 
+            messageByte[num++] = (byte) h;
             messageByte[num++] = (byte) j;
             messageByte[num++] = (byte) len2;
 
@@ -165,10 +172,17 @@ public class MessageStore {
 
             int len2 =  propertiesValueByte[ind].length;
             int j=0;//j��ʾ�������ٸ��ֽ�
+            int h=0;
+
+            if(len2>16129){
+                h = len2/16129;
+                len2 = len2%16129;
+            }
             if(len2>127){
                 j = len2/127;
                 len2 = len2%127;
             }
+            messageByte[num++] = (byte) h;
             messageByte[num++] = (byte) j;
             messageByte[num++] = (byte) len2;
             for (int check2 = 0;check2 < propertiesValueByte[ind].length;check2++) {
@@ -181,12 +195,18 @@ public class MessageStore {
 
         int len =  body.length;
         int j=0;//j��ʾ�������ٸ��ֽ�
+        int h=0;
 
+        if(len>16129){
+            h = len/16129;
+            len = len%16129;
+        }
         if(len>127){
             j = len/127;
             len = len%127;
         }
 
+        messageByte[num++] = (byte) h;
         messageByte[num++] = (byte) j;
         messageByte[num++] = (byte) len;
 
@@ -559,9 +579,15 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
                     headerKeyByte[headerKeyIndex] = buffBytes[indexNum++];
 
                 }
+                byte len0 = buffBytes[indexNum++];
+                int headerVLen = 0;
+                if (len0 != 0) {
+                    int temp = len0 * 16129;
+
+                    headerVLen += temp;
+                }
 
                 byte len1 = buffBytes[indexNum++];
-                int headerVLen = 0;
                 if (len1 != 0) {
                     int temp = len1 * 127;
 
@@ -592,8 +618,15 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
                 }
 
-                byte len1 = buffBytes[indexNum++];
+
+                byte len0 = buffBytes[indexNum++];
                 int propertiesVLen = 0;
+                if (len0 != 0) {
+                    int temp = len0 * 16129;
+
+                    propertiesVLen += temp;
+                }
+                byte len1 = buffBytes[indexNum++];
                 if (len1 != 0) {
                     int temp = len1 * 127;
 
@@ -614,8 +647,16 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
             }
 
 
-            byte len1 = buffBytes[indexNum++];
+            byte len0 = buffBytes[indexNum++];
             int bodyLen = 0;
+            if (len0 != 0) {
+                int temp = len0 * 16129;
+
+                bodyLen += temp;
+            }
+
+            byte len1 = buffBytes[indexNum++];
+
             if (len1 != 0) {
                 int temp = len1 * 127;
 
