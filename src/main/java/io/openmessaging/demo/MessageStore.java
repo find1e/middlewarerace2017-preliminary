@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.channels.FileChannel;
@@ -18,6 +19,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class MessageStore {
 
@@ -44,7 +46,7 @@ public class MessageStore {
 
     private ByteBuffer byteBuffer = ByteBuffer.allocate(SendConstants.buffSize);
 
-
+    private ReentrantLock reentrantLock = new ReentrantLock();
 
 
    // private AtomicBoolean insertFlag = new AtomicBoolean(true);
@@ -71,7 +73,9 @@ public class MessageStore {
             headerValueByte[indexNum++] = headerValue.getBytes();
 
         }
-
+/*FileChannel fileChannel;
+        MappedByteBuffer map = fileChannel.map(new FileChannel.MapMode(), 0, 0);
+        map.array();*/
         Set propertiesKeySet = message.properties().keySet();
         int propertiesNum = propertiesKeySet.size();
 
@@ -225,6 +229,11 @@ public class MessageStore {
 
 
         byteBuffer.flip();
+        try {
+            semaphore.acquire();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         File file = new File(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.get());
 
         if (!file.exists()) {
@@ -237,6 +246,7 @@ public class MessageStore {
         }
 
             Path path = Paths.get(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.getAndAdd(1));
+
             AsynchronousFileChannel asynchronousFileChannel = null;
             try {
                 asynchronousFileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.WRITE);
@@ -244,8 +254,10 @@ public class MessageStore {
                 e.printStackTrace();
             }
 
+
             asynchronousFileChannel.write(byteBuffer, 0, asynchronousFileChannel, new CompletionHandler<Integer, AsynchronousFileChannel>() {
-            @Override
+
+                @Override
             public void completed(Integer result, AsynchronousFileChannel attachment) {
                 try {
                     attachment.close();
@@ -270,37 +282,23 @@ public class MessageStore {
     }
 
 
-    public synchronized void putMessage(DefaultBytesMessage message,KeyValue properties) {
-
-
-
-
-
-
-
+    public  void putMessage(DefaultBytesMessage message,KeyValue properties,DefaultProducer defaultProducer) {
         byte[] messageByte = serianized(message);
 
+        if (messageByte.length >= defaultProducer.getByteBuffer().remaining()) {
 
 
 
-        if (messageByte.length >= byteBuffer.remaining()) {
+            defaultProducer.getByteBuffer().put(SendConstants.cutFlag);
+            sendMessage(defaultProducer.getByteBuffer(),properties);
 
-            try {
-                semaphore.acquire();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            byteBuffer.put(SendConstants.cutFlag);
-            sendMessage(byteBuffer,properties);
-
-            byteBuffer = ByteBuffer.allocate(SendConstants.buffSize);
+            defaultProducer.setByteBuffer(ByteBuffer.allocate(SendConstants.buffSize));
 
 
 
         }
 
-        byteBuffer.put(messageByte);
+        defaultProducer.getByteBuffer().put(messageByte);
 
 
 
@@ -541,7 +539,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
             int j=0;//j��ʾ�������ٸ��ֽ�
         byte[] lenFlag=new byte[2];
         if(length>255){
-            j=length/255;
+             j=length/255;
         }
 
         lenFlag[0]= (byte) j;
@@ -707,7 +705,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
             }
 
 
-            if (indexNum<= buffBytes.length- 2 && buffBytes[indexNum] != SendConstants.cutFlag) {
+            if (indexNum<= buffBytes.length - 2 && buffBytes[indexNum] != SendConstants.cutFlag) {
                 defaultBytesMessage = new DefaultBytesMessage(null);
             }else {
                 break;
@@ -716,6 +714,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
         }
 
 
+        return ;
     }
 
 
@@ -813,10 +812,8 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
 
 
-   public void flush(KeyValue properties) {
+   public void flush(KeyValue properties,ByteBuffer byteBuffer) {
 
-        if (flushFlag.compareAndSet(true,false)) {
-           // System.out.println("111");
             File file = new File(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.get());
 
             if (!file.exists()) {
@@ -850,7 +847,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
             System.out.println("wwwwwwwwwwww");
         }
-           }
+
 
 
     public AtomicInteger getAtomicIntegerThreadId() {

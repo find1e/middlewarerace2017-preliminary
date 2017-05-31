@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -15,6 +16,8 @@ public class DefaultProducer implements Producer {
     private MessageFactory messageFactory = new DefaultMessageFactory();
     private MessageStore messageStore = MessageStore.getInstance();
     private KeyValue properties;
+    private ByteBuffer byteBuffer = ByteBuffer.allocate(SendConstants.buffSize);
+
 
     DefaultBytesMessage defaultBytesMessage = null;
 
@@ -95,7 +98,7 @@ public class DefaultProducer implements Producer {
 //
 //        System.out.println("--------------------------------");
 
-            messageStore.putMessage((DefaultBytesMessage) defaultBytesMessag,properties);
+            messageStore.putMessage((DefaultBytesMessage) defaultBytesMessag,properties,this);
 
 
     }
@@ -136,7 +139,7 @@ public class DefaultProducer implements Producer {
     @Override
     public void flush() {
 
-        messageStore.flush(properties);
+        messageStore.flush(properties,byteBuffer);
     }
 
     @Override
@@ -146,6 +149,13 @@ public class DefaultProducer implements Producer {
 
     @Override
     public void shutdown() {
+
+    }
+    public ByteBuffer getByteBuffer(){
+        return byteBuffer;
+    }
+    public void setByteBuffer(ByteBuffer byteBuffer){
+        this.byteBuffer = byteBuffer;
 
     }
 }
