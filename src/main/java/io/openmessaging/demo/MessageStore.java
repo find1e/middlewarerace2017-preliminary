@@ -229,12 +229,8 @@ public class MessageStore {
 
 
         byteBuffer.flip();
-        try {
-            semaphore.acquire();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        File file = new File(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.get());
+
+        File file = new File(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.getAndAdd(1));
 
         if (!file.exists()) {
             try {
@@ -245,9 +241,14 @@ public class MessageStore {
             }
         }
 
-            Path path = Paths.get(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.getAndAdd(1));
+            Path path = Paths.get(file.getAbsolutePath());
 
             AsynchronousFileChannel asynchronousFileChannel = null;
+        try {
+            semaphore.acquire();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
             try {
                 asynchronousFileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.WRITE);
             } catch (IOException e) {
@@ -814,7 +815,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
    public void flush(KeyValue properties,ByteBuffer byteBuffer) {
 
-            File file = new File(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.get());
+            File file = new File(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.getAndAdd(1));
 
             if (!file.exists()) {
                 try {
@@ -825,7 +826,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
                 }
             }
             if (byteBuffer.hasRemaining()) {
-                Path path = Paths.get(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.getAndAdd(1));
+                Path path = Paths.get(file.getAbsolutePath());
                 AsynchronousFileChannel asynchronousFileChannel = null;
                 try {
                     asynchronousFileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.WRITE);
