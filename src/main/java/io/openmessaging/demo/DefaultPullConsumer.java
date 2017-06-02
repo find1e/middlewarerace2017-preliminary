@@ -26,6 +26,7 @@ public class DefaultPullConsumer implements PullConsumer {
     private int threadId = 0;
     DefaultBytesMessage defaultBytesMessage = null;
 
+
     // int remain;
     public DefaultPullConsumer(KeyValue properties) {
         this.properties = properties;

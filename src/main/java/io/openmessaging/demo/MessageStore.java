@@ -46,7 +46,7 @@ public class MessageStore {
 
     private ByteBuffer byteBuffer = ByteBuffer.allocate(SendConstants.buffSize);
 
-    private ReentrantLock reentrantLock = new ReentrantLock();
+   // private ReentrantLock reentrantLock = new ReentrantLock();
 
 
    // private AtomicBoolean insertFlag = new AtomicBoolean(true);
@@ -224,13 +224,10 @@ public class MessageStore {
 
 
 
-    public  void sendMessage(ByteBuffer byteBuffer,KeyValue properties){
-
-
-
-        byteBuffer.flip();
+    public void sendMessage(ByteBuffer byteBuffer,KeyValue properties,Semaphore reentrantLock){
 
         File file = new File(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.getAndAdd(1));
+
 
         if (!file.exists()) {
             try {
@@ -244,11 +241,7 @@ public class MessageStore {
             Path path = Paths.get(file.getAbsolutePath());
 
             AsynchronousFileChannel asynchronousFileChannel = null;
-        try {
-            semaphore.acquire();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+
             try {
                 asynchronousFileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.WRITE);
             } catch (IOException e) {
@@ -256,50 +249,74 @@ public class MessageStore {
             }
 
 
-            asynchronousFileChannel.write(byteBuffer, 0, asynchronousFileChannel, new CompletionHandler<Integer, AsynchronousFileChannel>() {
 
-                @Override
-            public void completed(Integer result, AsynchronousFileChannel attachment) {
-                try {
-                    attachment.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                semaphore.release();
-            }
-
-            @Override
-            public void failed(Throwable exc, AsynchronousFileChannel attachment) {
-
-                try {
-                    attachment.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                semaphore.release();
-            }
-        });
-
-    }
-
-
-    public  void putMessage(DefaultBytesMessage message,KeyValue properties,DefaultProducer defaultProducer) {
-        byte[] messageByte = serianized(message);
-
-        if (messageByte.length >= defaultProducer.getByteBuffer().remaining()) {
+            byte[] putByte = new byte[byteBuffer.capacity() - byteBuffer.position()];
 
 
 
-            defaultProducer.getByteBuffer().put(SendConstants.cutFlag);
-            sendMessage(defaultProducer.getByteBuffer(),properties);
+                byteBuffer.put(putByte);
+                byteBuffer.flip();
+        try {
+            reentrantLock.acquire();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
-            defaultProducer.setByteBuffer(ByteBuffer.allocate(SendConstants.buffSize));
+        asynchronousFileChannel.write(byteBuffer, 0,new LockAndChannelProxy(reentrantLock,asynchronousFileChannel,byteBuffer), new CompletionHandler<Integer,LockAndChannelProxy>() {
+                    @Override
+                    public void completed(Integer result, LockAndChannelProxy attachment) {
+                        try {
+                            attachment.getAsynchronousFileChannel().close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        attachment.getByteBuffer().clear();
+                        attachment.getReentrantLock().release();
+
+                    }
+
+                    @Override
+                    public void failed(Throwable exc, LockAndChannelProxy attachment) {
+
+                        try {
+                            attachment.getAsynchronousFileChannel().close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        attachment.getByteBuffer().clear();
+                        attachment.getReentrantLock().release();
+                    }
+                });
+
 
 
 
         }
 
-        defaultProducer.getByteBuffer().put(messageByte);
+
+    public void putMessage(DefaultBytesMessage message,KeyValue properties,DefaultProducer defaultProducer) {
+        byte[] messageByte = serianized(message);
+     ByteBuffer byteBuffer = defaultProducer.getFlipByteBuffer(false);
+
+
+
+        if (messageByte.length >= byteBuffer.remaining()) {
+
+
+
+            byteBuffer.put(SendConstants.cutFlag);
+
+            sendMessage(byteBuffer,properties, defaultProducer.getReentrantLock());
+
+            //defaultProducer.setByteBuffer(ByteBuffer.allocate(SendConstants.buffSize));
+
+            byteBuffer = defaultProducer.getFlipByteBuffer(true);
+
+
+        }
+
+
+        byteBuffer.put(messageByte);
 
 
 
@@ -813,7 +830,8 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
 
 
-   public void flush(KeyValue properties,ByteBuffer byteBuffer) {
+   public void flush(KeyValue properties,DefaultProducer defaultProducer) {
+        ByteBuffer byteBuffer = defaultProducer.getByteBuffer();
 
             File file = new File(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.getAndAdd(1));
 
@@ -825,7 +843,11 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
                 }
             }
+
             if (byteBuffer.hasRemaining()) {
+                byteBuffer.put(SendConstants.cutFlag);
+                byte[] putByte = new byte[byteBuffer.capacity() - byteBuffer.position()];
+                byteBuffer.put(putByte);
                 Path path = Paths.get(file.getAbsolutePath());
                 AsynchronousFileChannel asynchronousFileChannel = null;
                 try {
@@ -833,7 +855,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                byteBuffer.put(SendConstants.cutFlag);
+
                 byteBuffer.flip();
                 Future future = asynchronousFileChannel.write(byteBuffer, 0);
 

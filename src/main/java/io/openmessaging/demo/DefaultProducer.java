@@ -9,17 +9,26 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class DefaultProducer implements Producer {
     private MessageFactory messageFactory = new DefaultMessageFactory();
     private MessageStore messageStore = MessageStore.getInstance();
     private KeyValue properties;
-    private ByteBuffer byteBuffer = ByteBuffer.allocate(SendConstants.buffSize);
+    private ByteBuffer byteBuffer = ByteBuffer.allocateDirect(SendConstants.buffSize);
+    private ByteBuffer byteBuffer2 = ByteBuffer.allocateDirect(SendConstants.buffSize);
 
+    private ByteBuffer resultByteBuffer = null;
+    private AtomicBoolean atomicBoolean = new AtomicBoolean();
+    private int posion;
+    private Semaphore reentrantLock = new Semaphore(1);
 
     DefaultBytesMessage defaultBytesMessage = null;
+
+
 
 
     public DefaultProducer(KeyValue properties) {
@@ -30,7 +39,28 @@ public class DefaultProducer implements Producer {
 
 
 
+    public ByteBuffer getFlipByteBuffer(boolean flip) {
+        if (flip) {
 
+            if (resultByteBuffer == byteBuffer) {
+
+                resultByteBuffer = byteBuffer2;
+                return byteBuffer2;
+
+            } else {
+                resultByteBuffer = byteBuffer;
+                return byteBuffer;
+
+
+            }
+
+        }
+        if (resultByteBuffer == null) {
+
+            resultByteBuffer = byteBuffer;
+        }
+        return resultByteBuffer;
+    }
 
     @Override public synchronized BytesMessage createBytesMessageToTopic(String topic, byte[] body) {
 
@@ -139,7 +169,7 @@ public class DefaultProducer implements Producer {
     @Override
     public void flush() {
 
-        messageStore.flush(properties,byteBuffer);
+        messageStore.flush(properties,this);
     }
 
     @Override
@@ -158,4 +188,41 @@ public class DefaultProducer implements Producer {
         this.byteBuffer = byteBuffer;
 
     }
+
+    public int getPosion() {
+        return posion;
+    }
+
+    public void setPosion(int posion) {
+        this.posion = posion;
+    }
+
+    public ByteBuffer getByteBuffer2() {
+        return byteBuffer2;
+    }
+
+    public void setByteBuffer2(ByteBuffer byteBuffer2) {
+        this.byteBuffer2 = byteBuffer2;
+    }
+
+    public AtomicBoolean getAtomicBoolean() {
+        return atomicBoolean;
+    }
+
+    public void setAtomicBoolean(AtomicBoolean atomicBoolean) {
+        this.atomicBoolean = atomicBoolean;
+    }
+
+    public ByteBuffer getResultByteBuffer(){
+        return resultByteBuffer;
+    }
+
+    public Semaphore getReentrantLock() {
+        return reentrantLock;
+    }
+
+    public void setReentrantLock(Semaphore reentrantLock) {
+        this.reentrantLock = reentrantLock;
+    }
 }
+
