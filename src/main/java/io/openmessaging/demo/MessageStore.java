@@ -61,20 +61,23 @@ public class MessageStore {
         int headNum = headerKeySet.size();
 
 
-        byte[][] headerKeyByte = new byte[headNum][];
-        byte[][] headerValueByte = new byte[headNum][];
+        byte[] headerKeyByte = new byte[headNum];
+        byte[] headerValueByte = new byte[headNum];
         Iterator<String> iterator = headerKeySet.iterator();
         int indexNum = 0;
         while (iterator.hasNext()){
 
             String headerKey = iterator.next();
             String headerValue = message.headers().getString(headerKey);
-            headerKeyByte[indexNum] = headerKey.getBytes();
-            headerValueByte[indexNum++] = headerValue.getBytes();
+            headerKeyByte[indexNum] = headerKey.equals(MessageHeader.QUEUE)?"q".getBytes()[0]:"t".getBytes()[0];
 
-        }
+          //  System.out.println(headerValue.substring(headerValue.indexOf("_") + 1));
+            int r = Integer.valueOf(headerValue.substring(headerValue.indexOf("_") + 1));
+            headerValueByte[indexNum++] = (byte) r;
+
+            }
 /*FileChannel fileChannel;
-        MappedByteBuffer map = fileChannel.map(new FileChannel.MapMode(), 0, 0);
+        MappedByteBuffer map = fileChannel.map(new FileChannel.apMode(), 0, 0);
         map.array();*/
         Set propertiesKeySet = message.properties().keySet();
         int propertiesNum = propertiesKeySet.size();
@@ -98,15 +101,15 @@ public class MessageStore {
         byte[] body = message.getBody();
 
         int length = body.length;
-        for (byte[] b : headerKeyByte) {
-            length += b.length;
+        for (byte b : headerKeyByte) {
+            length += 1;
 
-            ++length;
+
         }
-        for (byte[] b : headerValueByte) {
-            length += b.length;
+        for (byte b : headerValueByte) {
+            length += 1;
 
-            length = length + 3;
+
         }
         for (byte[] b : propertiesKeyByte) {
             length += b.length;
@@ -128,40 +131,24 @@ public class MessageStore {
 
 
         for (int ind = 0;ind < headerKeyByte.length;ind++) {
-            byte len = (byte) headerKeyByte[ind].length;
-            messageByte[num++] = len;
-            for (int check = 0;check < headerKeyByte[ind].length;check++) {
-                messageByte[num++] = headerKeyByte[ind][check];
-
-            }
 
 
 
-            int len2 =  headerValueByte[ind].length;
-            int j=0;//j��ʾ�������ٸ��ֽ�
-
-            int h=0;
-
-            if(len2>16129){
-                h = len2/16129;
-                len2 = len2%16129;
-            }
-            if(len2>127){
-                j = len2/127;
-                len2 = len2%127;
-            }
-
-            messageByte[num++] = (byte) h;
-            messageByte[num++] = (byte) j;
-            messageByte[num++] = (byte) len2;
+                messageByte[num++] = headerKeyByte[ind];
 
 
 
 
-            for (int check2 = 0;check2 < headerValueByte[ind].length;check2++) {
-                messageByte[num++] = headerValueByte[ind][check2];
 
-            }
+
+
+
+
+
+                messageByte[num++] = headerValueByte[ind];
+
+
+
 
         }
 
@@ -589,42 +576,27 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
             headerNum = buffBytes[indexNum++];
             propertiesNum = buffBytes[indexNum++];
             for (int headerIndex = 0; headerIndex < headerNum; headerIndex++) {
-                headerKeyLen = buffBytes[indexNum++];
-                byte[] headerKeyByte = new byte[headerKeyLen];
-                for (int headerKeyIndex = 0; headerKeyIndex < headerKeyLen; headerKeyIndex++) {
-                    headerKeyByte[headerKeyIndex] = buffBytes[indexNum++];
+                byte headerKey = buffBytes[indexNum++];
 
-                }
-                byte len0 = buffBytes[indexNum++];
-                int headerVLen = 0;
-                if (len0 != 0) {
-                    int temp = len0 * 16129;
+                byte[] b = new byte[1];
+                b[0] = headerKey;
+                int headerValue = buffBytes[indexNum++];
+                String headerKeyString = null;
+                String headerValueString = null;
+                if (headerKey == "q".getBytes()[0]) {
+                    headerKeyString = "Queue";
 
-                    headerVLen += temp;
-                }
+                    headerValueString = "QUEUE_" + headerValue;
 
-                byte len1 = buffBytes[indexNum++];
-                if (len1 != 0) {
-                    int temp = len1 * 127;
-
-                    headerVLen += temp;
+                }else {
+                 headerKeyString = "Topic";
+                    headerValueString = "TOPIC_" + headerValue;
                 }
 
 
 
-                    headerVLen += buffBytes[indexNum++];
 
-
-
-
-                byte[] headerValueByte = new byte[headerVLen];
-                for (int headerValueIndex = 0; headerValueIndex < headerVLen; headerValueIndex++) {
-                    headerValueByte[headerValueIndex] = buffBytes[indexNum++];
-
-                }
-
-
-                defaultBytesMessage.putHeaders(new String(headerKeyByte), new String(headerValueByte));
+                defaultBytesMessage.putHeaders(headerKeyString,headerValueString);
             }
             for (int propertiesIndex = 0; propertiesIndex < propertiesNum; propertiesIndex++) {
                 propertiesKeyLen = buffBytes[indexNum++];
