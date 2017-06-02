@@ -77,9 +77,9 @@ public class DefaultProducer implements Producer {
 
 
         }
-        for (String  key :properties.keySet()) {
+       /* for (String  key :properties.keySet()) {
             defaultBytesMessage.putProperties(key, properties.getString(key));
-        }
+        }*/
         return defaultBytesMessage;
 
     }
@@ -98,10 +98,10 @@ public class DefaultProducer implements Producer {
         }
 
 
-
+/*
         for (String  key :properties.keySet()) {
             defaultBytesMessage.putProperties(key, properties.getString(key));
-        } return defaultBytesMessage;
+        }*/ return defaultBytesMessage;
     }
 
 
