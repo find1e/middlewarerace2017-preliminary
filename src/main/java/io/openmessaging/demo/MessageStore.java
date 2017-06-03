@@ -43,9 +43,12 @@ public class MessageStore {
 
     private Semaphore semaphore = new Semaphore(1);
 
-    private ByteBuffer byteBuffer = ByteBuffer.allocate(SendConstants.buffSize);
+    private ByteBuffer byteBuffer = ByteBuffer.allocateDirect(SendConstants.buffSize);
 
-   // private ReentrantLock reentrantLock = new ReentrantLock();
+    private ByteBuffer byteBuffer2 = ByteBuffer.allocateDirect(SendConstants.buffSize);
+
+    private ByteBuffer resultBuffer = null;
+    // private ReentrantLock reentrantLock = new ReentrantLock();
 
 
    // private AtomicBoolean insertFlag = new AtomicBoolean(true);
@@ -362,15 +365,16 @@ public class MessageStore {
 
 
             atomicBooleanOverFlag.compareAndSet(true,false);
-            ByteBuffer result = byteBuffer;
+            ByteBuffer result = getFlipBuffer(false);
             result.flip();
-            byteBuffer = null;
+
             semaphore.release();
             return result;
         }
 
-        ByteBuffer resultBuffer = byteBuffer;
-        byteBuffer = ByteBuffer.allocate(SendConstants.buffSize);
+        ByteBuffer resultBuffer = getFlipBuffer(false);
+        ByteBuffer resultFlipBuffer = getFlipBuffer(true);
+        resultFlipBuffer.clear();
         Path path = Paths.get(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.getAndAdd(1));
         AsynchronousFileChannel asynchronousFileChannel = null;
         try {
@@ -380,7 +384,7 @@ public class MessageStore {
         }
 
 
-        asynchronousFileChannel.read(byteBuffer, 0, asynchronousFileChannel, new CompletionHandler<Integer, AsynchronousFileChannel>() {
+        asynchronousFileChannel.read(resultFlipBuffer, 0, asynchronousFileChannel, new CompletionHandler<Integer, AsynchronousFileChannel>() {
             @Override
             public void completed(Integer result, AsynchronousFileChannel attachment) {
                 try {
@@ -388,6 +392,7 @@ public class MessageStore {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+
 
                 semaphore.release();
             }
@@ -568,13 +573,13 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
 
         //byteBuffer.flip();
-        byte[] buffBytes = byteBuffer.array();
-
        // System.out.println(buffBytes.length);
 //        for (int k = 0;k < 200;k++) {
 //            System.out.print(buffBytes[k]);
 //
 //        }
+
+
 
         int headerNum = 0;
         int propertiesNum = 0;
@@ -585,16 +590,16 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
         int propertiesValueLen = 0;
         DefaultBytesMessage defaultBytesMessage = new DefaultBytesMessage(null);
         while (true) {
-            headerNum = buffBytes[indexNum++];
-            propertiesNum = buffBytes[indexNum++];
+            headerNum = byteBuffer.get();
+            propertiesNum = byteBuffer.get();
             for (int headerIndex = 0; headerIndex < headerNum; headerIndex++) {
-                headerKeyLen = buffBytes[indexNum++];
+                headerKeyLen = byteBuffer.get();
                 byte[] headerKeyByte = new byte[headerKeyLen];
                 for (int headerKeyIndex = 0; headerKeyIndex < headerKeyLen; headerKeyIndex++) {
-                    headerKeyByte[headerKeyIndex] = buffBytes[indexNum++];
+                    headerKeyByte[headerKeyIndex] = byteBuffer.get();
 
                 }
-                byte len0 = buffBytes[indexNum++];
+                byte len0 = byteBuffer.get();
                 int headerVLen = 0;
                 if (len0 != 0) {
                     int temp = len0 * 16129;
@@ -602,7 +607,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
                     headerVLen += temp;
                 }
 
-                byte len1 = buffBytes[indexNum++];
+                byte len1 = byteBuffer.get();
                 if (len1 != 0) {
                     int temp = len1 * 127;
 
@@ -611,14 +616,14 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
 
 
-                    headerVLen += buffBytes[indexNum++];
+                    headerVLen += byteBuffer.get();
 
 
 
 
                 byte[] headerValueByte = new byte[headerVLen];
                 for (int headerValueIndex = 0; headerValueIndex < headerVLen; headerValueIndex++) {
-                    headerValueByte[headerValueIndex] = buffBytes[indexNum++];
+                    headerValueByte[headerValueIndex] = byteBuffer.get();
 
                 }
 
@@ -626,22 +631,22 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
                 defaultBytesMessage.putHeaders(new String(headerKeyByte), new String(headerValueByte));
             }
             for (int propertiesIndex = 0; propertiesIndex < propertiesNum; propertiesIndex++) {
-                propertiesKeyLen = buffBytes[indexNum++];
+                propertiesKeyLen = byteBuffer.get();
                 byte[] propertiesKeyByte = new byte[propertiesKeyLen];
                 for (int propertiesKeyIndex = 0; propertiesKeyIndex < propertiesKeyLen; propertiesKeyIndex++) {
-                    propertiesKeyByte[propertiesKeyIndex] = buffBytes[indexNum++];
+                    propertiesKeyByte[propertiesKeyIndex] = byteBuffer.get();
 
                 }
 
 
-                byte len0 = buffBytes[indexNum++];
+                byte len0 = byteBuffer.get();
                 int propertiesVLen = 0;
                 if (len0 != 0) {
                     int temp = len0 * 16129;
 
                     propertiesVLen += temp;
                 }
-                byte len1 = buffBytes[indexNum++];
+                byte len1 = byteBuffer.get();
                 if (len1 != 0) {
                     int temp = len1 * 127;
 
@@ -650,11 +655,11 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
 
 
-                propertiesVLen += buffBytes[indexNum++];
+                propertiesVLen += byteBuffer.get();
 
                 byte[] propertiesValueByte = new byte[propertiesVLen];
                 for (int propertiesValueIndex = 0; propertiesValueIndex < propertiesVLen; propertiesValueIndex++) {
-                    propertiesValueByte[propertiesValueIndex] = buffBytes[indexNum++];
+                    propertiesValueByte[propertiesValueIndex] = byteBuffer.get();
 
                 }
 
@@ -662,7 +667,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
             }
 
 
-            byte len0 = buffBytes[indexNum++];
+            byte len0 = byteBuffer.get();
             int bodyLen = 0;
             if (len0 != 0) {
                 int temp = len0 * 16129;
@@ -670,7 +675,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
                 bodyLen += temp;
             }
 
-            byte len1 = buffBytes[indexNum++];
+            byte len1 = byteBuffer.get();
 
             if (len1 != 0) {
                 int temp = len1 * 127;
@@ -680,11 +685,11 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
 
 
-            bodyLen += buffBytes[indexNum++];
+            bodyLen += byteBuffer.get();
 
             byte[] body2 = new byte[bodyLen];
             for (int indexBody = 0; indexBody < bodyLen; indexBody++) {
-                body2[indexBody] = buffBytes[indexNum++];
+                body2[indexBody] = byteBuffer.get();
 
             }
             defaultBytesMessage.setBody(body2);
@@ -722,7 +727,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
             }
 
 
-            if (indexNum<= buffBytes.length - 2 && buffBytes[indexNum] != SendConstants.cutFlag) {
+            if (indexNum<= byteBuffer.limit() - 2 && byteBuffer.get(byteBuffer.position()) != SendConstants.cutFlag) {
                 defaultBytesMessage = new DefaultBytesMessage(null);
             }else {
                 break;
@@ -878,6 +883,25 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
     public void setAtomicIntegerThreadId(AtomicInteger atomicIntegerThreadId) {
         this.atomicIntegerThreadId = atomicIntegerThreadId;
+    }
+
+    public ByteBuffer getFlipBuffer(boolean flag){
+        if (flag == true) {
+            if (resultBuffer == byteBuffer) {
+                resultBuffer = byteBuffer2;
+                return byteBuffer2;
+
+            } else {
+                resultBuffer = byteBuffer;
+                return byteBuffer;
+            }
+        }else {
+            if (resultBuffer == null) {
+                resultBuffer = byteBuffer;
+
+            }
+            return resultBuffer;
+        }
     }
 
 
