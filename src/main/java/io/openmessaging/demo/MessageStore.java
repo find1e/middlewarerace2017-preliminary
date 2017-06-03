@@ -70,7 +70,7 @@ public class MessageStore {
 
             int headNum = headerKeySet.size();
 
-            size = headNum;
+            size = message.headers().keySet().size() + message.properties().keySet().size();
 
             byte[][] headerKeyByte = new byte[headNum][];
 
