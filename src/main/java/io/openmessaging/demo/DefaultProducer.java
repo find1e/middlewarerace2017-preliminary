@@ -78,7 +78,6 @@ public class DefaultProducer implements Producer {
 
         }
         for (String  key :properties.keySet()) {
-
             if ("STORE_PATH".equals(key)) {
                 continue;
 
