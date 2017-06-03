@@ -64,7 +64,7 @@ public class MessageStore {
 
     public  byte[] serianized(DefaultBytesMessage message,KeyValue properties){
 
-        if (message.headers().keySet().size() > size) {
+        if (message.headers().keySet().size() + message.properties().keySet().size() > size) {
 
             Set headerKeySet = message.headers().keySet();
 
