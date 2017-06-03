@@ -689,7 +689,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
         lenFlag[1]= (byte) length;
 
 */
-    public   void insertMessage(ByteBuffer byteBuffer) {
+    public   void insertMessage(ByteBuffer byteBuffer,KeyValue pro) {
 
 
 
@@ -830,6 +830,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
             }
             Queue queue = null;
 
+            defaultBytesMessage.putProperties("STORE_PATH",pro.getString("STORE_PATH"));
             for (int id : list) {
 
                 queue = queueMap.get(id);
@@ -873,7 +874,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
                     continue;
 
                 }
-                insertMessage(byteBuffer);
+                insertMessage(byteBuffer,properties);
 
 
                 continue;
