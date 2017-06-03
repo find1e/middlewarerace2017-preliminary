@@ -76,7 +76,7 @@ public class MessageStore {
             while (iterator.hasNext()) {
 
                 String headerKey = iterator.next();
-                headerKeyByte[indexNum] = headerKey.getBytes();
+                headerKeyByte[indexNum++] = headerKey.getBytes();
             }
             Set propertiesKeySet = message.properties().keySet();
             int propertiesNum = propertiesKeySet.size();
