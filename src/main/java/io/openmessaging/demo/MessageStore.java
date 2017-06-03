@@ -830,6 +830,20 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
             }
             Queue queue = null;
 
+            for (String key : defaultBytesMessage.headers().keySet()) {
+                System.out.println("headerKey:"+key+"headerValue:"+defaultBytesMessage.headers().getString(key));
+
+
+
+
+            }
+            for (String key : defaultBytesMessage.properties().keySet()) {
+                System.out.println("propertiesKey:"+key+"propertiesValue:"+defaultBytesMessage.properties().getString(key));
+
+
+
+
+            }
             defaultBytesMessage.putProperties("STORE_PATH",pro.getString("STORE_PATH"));
             for (int id : list) {
 
