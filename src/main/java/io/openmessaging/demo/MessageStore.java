@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.channels.FileChannel;
@@ -43,168 +44,24 @@ public class MessageStore {
 
     private Semaphore semaphore = new Semaphore(1);
 
-    private ByteBuffer byteBuffer = ByteBuffer.allocateDirect(SendConstants.buffSize);
+    private ByteBuffer byteBuffer = ByteBuffer.allocate(SendConstants.buffSize);
 
-    private ByteBuffer byteBuffer2 = ByteBuffer.allocateDirect(SendConstants.buffSize);
-
-    private ByteBuffer resultBuffer = null;
-
-    private String[] headerStrings = null;
-
-    private String[] propertiesStrings = null;
-
-    // private ReentrantLock reentrantLock = new ReentrantLock();
+   // private ReentrantLock reentrantLock = new ReentrantLock();
 
 
    // private AtomicBoolean insertFlag = new AtomicBoolean(true);
 
 
-    private volatile  AtomicInteger size = new AtomicInteger(0);
 
 
-    public  byte[] serianized(DefaultBytesMessage message,KeyValue properties){
-
-        if (message.headers().keySet().size() + message.properties().keySet().size() > size.get()) {
-            size.set(message.headers().keySet().size() + message.properties().keySet().size());
-
-
-            Set headerKeySet = message.headers().keySet();
-
-            int headNum = headerKeySet.size();
-
-
-            byte[][] headerKeyByte = new byte[headNum][];
-
-            Iterator<String> iterator = headerKeySet.iterator();
-            int indexNum = 0;
-            while (iterator.hasNext()) {
-
-                String headerKey = iterator.next();
-                headerKeyByte[indexNum++] = headerKey.getBytes();
-            }
-            Set propertiesKeySet = message.properties().keySet();
-            int propertiesNum = propertiesKeySet.size();
-
-            byte[][] propertiesKeyByte = new byte[propertiesNum][];
-
-            Iterator<String> i = propertiesKeySet.iterator();
-            int index = 0;
-            while (i.hasNext()){
-                String propertiesKey = i.next();
-                 propertiesKeyByte[index++] = propertiesKey.getBytes();
-
-
-
-            }
-            int  length = 0;
-            for (byte[] b : headerKeyByte) {
-                length += b.length;
-
-                ++length;
-            }
-            for (byte[] b : propertiesKeyByte) {
-                length += b.length;
-                ++length;
-            }
-            byte[] messageByte = new byte[length + 2];
-            int num = 0;
-            messageByte[num++] = (byte)headNum;
-            messageByte[num++] = (byte)propertiesNum;
-
-
-
-            for (int ind = 0;ind < headerKeyByte.length;ind++) {
-                byte len = (byte) headerKeyByte[ind].length;
-                messageByte[num++] = len;
-                for (int check = 0;check < headerKeyByte[ind].length;check++) {
-                    messageByte[num++] = headerKeyByte[ind][check];
-
-                }
-
-
-
-
-
-            }
-
-            for (int ind = 0;ind < propertiesKeyByte.length;ind++) {
-                byte len = (byte) propertiesKeyByte[ind].length;
-                messageByte[num++] = len;
-                for (int check = 0;check < propertiesKeyByte[ind].length;check++) {
-                    messageByte[num++] = propertiesKeyByte[ind][check];
-
-                }
-
-
-            }
-            ByteBuffer byteBuffer = ByteBuffer.allocateDirect(messageByte.length);
-            byteBuffer.put(messageByte);
-
-
-            File file = new File(properties.getString("STORE_PATH") + "/" + "keys");
-
-
-            if (!file.exists()) {
-                try {
-                    file.createNewFile();
-                } catch (IOException e) {
-                    e.printStackTrace();
-
-                }
-            }
-
-            Path path = Paths.get(file.getAbsolutePath());
-
-            AsynchronousFileChannel asynchronousFileChannel = null;
-
-            try {
-                asynchronousFileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.WRITE);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-
-
-
-
-            byteBuffer.flip();
-
-
-            asynchronousFileChannel.write(byteBuffer, 0,asynchronousFileChannel, new CompletionHandler<Integer,AsynchronousFileChannel>() {
-                @Override
-                public void completed(Integer result, AsynchronousFileChannel attachment) {
-                    try {
-                        attachment.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-
-
-                }
-
-                @Override
-                public void failed(Throwable exc, AsynchronousFileChannel attachment) {
-
-                    try {
-                        attachment.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                }
-            });
-
-
-        }
-
+    public  byte[] serianized(DefaultBytesMessage message){
 
         Set headerKeySet = message.headers().keySet();
 
         int headNum = headerKeySet.size();
 
 
-
+        byte[][] headerKeyByte = new byte[headNum][];
         byte[][] headerValueByte = new byte[headNum][];
         Iterator<String> iterator = headerKeySet.iterator();
         int indexNum = 0;
@@ -212,7 +69,7 @@ public class MessageStore {
 
             String headerKey = iterator.next();
             String headerValue = message.headers().getString(headerKey);
-
+            headerKeyByte[indexNum] = headerKey.getBytes();
             headerValueByte[indexNum++] = headerValue.getBytes();
 
         }
@@ -222,14 +79,14 @@ public class MessageStore {
         Set propertiesKeySet = message.properties().keySet();
         int propertiesNum = propertiesKeySet.size();
 
-
+        byte[][] propertiesKeyByte = new byte[propertiesNum][];
         byte[][] propertiesValueByte = new byte[propertiesNum][];
         Iterator<String> i = propertiesKeySet.iterator();
         int index = 0;
         while (i.hasNext()){
             String propertiesKey = i.next();
             String propertiesValue = message.properties().getString(propertiesKey);
-
+            propertiesKeyByte[index] = propertiesKey.getBytes();
             propertiesValueByte[index++] = propertiesValue.getBytes();
 
 
@@ -240,14 +97,21 @@ public class MessageStore {
 
         byte[] body = message.getBody();
 
-       int  length = body.length;
+        int length = body.length;
+        for (byte[] b : headerKeyByte) {
+            length += b.length;
 
+            ++length;
+        }
         for (byte[] b : headerValueByte) {
             length += b.length;
 
             length = length + 3;
         }
-
+        for (byte[] b : propertiesKeyByte) {
+            length += b.length;
+            ++length;
+        }
         for (byte[] b : propertiesValueByte) {
             length += b.length;
 
@@ -263,9 +127,13 @@ public class MessageStore {
 
 
 
-        for (int ind = 0;ind < headerValueByte.length;ind++) {
+        for (int ind = 0;ind < headerKeyByte.length;ind++) {
+            byte len = (byte) headerKeyByte[ind].length;
+            messageByte[num++] = len;
+            for (int check = 0;check < headerKeyByte[ind].length;check++) {
+                messageByte[num++] = headerKeyByte[ind][check];
 
-
+            }
 
 
 
@@ -298,8 +166,13 @@ public class MessageStore {
         }
 
 
-        for (int ind = 0;ind < propertiesValueByte.length;ind++) {
+        for (int ind = 0;ind < propertiesKeyByte.length;ind++) {
+            byte len = (byte) propertiesKeyByte[ind].length;
+            messageByte[num++] = len;
+            for (int check = 0;check < propertiesKeyByte[ind].length;check++) {
+                messageByte[num++] = propertiesKeyByte[ind][check];
 
+            }
 
             int len2 =  propertiesValueByte[ind].length;
             int j=0;//j��ʾ�������ٸ��ֽ�
@@ -422,7 +295,7 @@ public class MessageStore {
 
 
     public void putMessage(DefaultBytesMessage message,KeyValue properties,DefaultProducer defaultProducer) {
-        byte[] messageByte = serianized(message,properties);
+        byte[] messageByte = serianized(message);
      ByteBuffer byteBuffer = defaultProducer.getFlipByteBuffer(false);
 
 
@@ -490,16 +363,15 @@ public class MessageStore {
 
 
             atomicBooleanOverFlag.compareAndSet(true,false);
-            ByteBuffer result = getFlipBuffer(false);
+            ByteBuffer result = byteBuffer;
             result.flip();
-
+            byteBuffer = null;
             semaphore.release();
             return result;
         }
 
-        ByteBuffer resultBuffer = getFlipBuffer(false);
-        ByteBuffer resultFlipBuffer = getFlipBuffer(true);
-        resultFlipBuffer.clear();
+        ByteBuffer resultBuffer = byteBuffer;
+        byteBuffer = ByteBuffer.allocate(SendConstants.buffSize);
         Path path = Paths.get(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.getAndAdd(1));
         AsynchronousFileChannel asynchronousFileChannel = null;
         try {
@@ -509,7 +381,7 @@ public class MessageStore {
         }
 
 
-        asynchronousFileChannel.read(resultFlipBuffer, 0, asynchronousFileChannel, new CompletionHandler<Integer, AsynchronousFileChannel>() {
+        asynchronousFileChannel.read(byteBuffer, 0, asynchronousFileChannel, new CompletionHandler<Integer, AsynchronousFileChannel>() {
             @Override
             public void completed(Integer result, AsynchronousFileChannel attachment) {
                 try {
@@ -517,7 +389,6 @@ public class MessageStore {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-
 
                 semaphore.release();
             }
@@ -693,18 +564,18 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
         lenFlag[1]= (byte) length;
 
 */
-    public   void insertMessage(ByteBuffer byteBuffer,KeyValue pro) {
+    public  synchronized void insertMessage(ByteBuffer byteBuffer,KeyValue pro) {
 
 
 
         //byteBuffer.flip();
+        byte[] buffBytes = byteBuffer.array();
+
        // System.out.println(buffBytes.length);
 //        for (int k = 0;k < 200;k++) {
 //            System.out.print(buffBytes[k]);
 //
 //        }
-
-
 
         int headerNum = 0;
         int propertiesNum = 0;
@@ -715,11 +586,16 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
         int propertiesValueLen = 0;
         DefaultBytesMessage defaultBytesMessage = new DefaultBytesMessage(null);
         while (true) {
-            headerNum = byteBuffer.get();
-            propertiesNum = byteBuffer.get();
-
+            headerNum = buffBytes[indexNum++];
+            propertiesNum = buffBytes[indexNum++];
             for (int headerIndex = 0; headerIndex < headerNum; headerIndex++) {
-                byte len0 = byteBuffer.get();
+                headerKeyLen = buffBytes[indexNum++];
+                byte[] headerKeyByte = new byte[headerKeyLen];
+                for (int headerKeyIndex = 0; headerKeyIndex < headerKeyLen; headerKeyIndex++) {
+                    headerKeyByte[headerKeyIndex] = buffBytes[indexNum++];
+
+                }
+                byte len0 = buffBytes[indexNum++];
                 int headerVLen = 0;
                 if (len0 != 0) {
                     int temp = len0 * 16129;
@@ -727,7 +603,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
                     headerVLen += temp;
                 }
 
-                byte len1 = byteBuffer.get();
+                byte len1 = buffBytes[indexNum++];
                 if (len1 != 0) {
                     int temp = len1 * 127;
 
@@ -736,31 +612,37 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
 
 
-                    headerVLen += byteBuffer.get();
+                    headerVLen += buffBytes[indexNum++];
 
 
 
 
                 byte[] headerValueByte = new byte[headerVLen];
                 for (int headerValueIndex = 0; headerValueIndex < headerVLen; headerValueIndex++) {
-                    headerValueByte[headerValueIndex] = byteBuffer.get();
+                    headerValueByte[headerValueIndex] = buffBytes[indexNum++];
 
                 }
 
 
-                defaultBytesMessage.putHeaders(headerStrings[headerIndex], new String(headerValueByte));
+                defaultBytesMessage.putHeaders(new String(headerKeyByte), new String(headerValueByte));
             }
             for (int propertiesIndex = 0; propertiesIndex < propertiesNum; propertiesIndex++) {
+                propertiesKeyLen = buffBytes[indexNum++];
+                byte[] propertiesKeyByte = new byte[propertiesKeyLen];
+                for (int propertiesKeyIndex = 0; propertiesKeyIndex < propertiesKeyLen; propertiesKeyIndex++) {
+                    propertiesKeyByte[propertiesKeyIndex] = buffBytes[indexNum++];
+
+                }
 
 
-                byte len0 = byteBuffer.get();
+                byte len0 = buffBytes[indexNum++];
                 int propertiesVLen = 0;
                 if (len0 != 0) {
                     int temp = len0 * 16129;
 
                     propertiesVLen += temp;
                 }
-                byte len1 = byteBuffer.get();
+                byte len1 = buffBytes[indexNum++];
                 if (len1 != 0) {
                     int temp = len1 * 127;
 
@@ -769,19 +651,22 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
 
 
-                propertiesVLen += byteBuffer.get();
+                propertiesVLen += buffBytes[indexNum++];
 
                 byte[] propertiesValueByte = new byte[propertiesVLen];
                 for (int propertiesValueIndex = 0; propertiesValueIndex < propertiesVLen; propertiesValueIndex++) {
-                    propertiesValueByte[propertiesValueIndex] = byteBuffer.get();
+                    propertiesValueByte[propertiesValueIndex] = buffBytes[indexNum++];
 
                 }
 
-                defaultBytesMessage.putProperties(propertiesStrings[propertiesIndex], new String(propertiesValueByte));
+                if (propertiesIndex == 0) {
+                    defaultBytesMessage.putProperties("STORE_PATH",pro.getString("STORE_PATH"));
+                }
+                defaultBytesMessage.putProperties(new String(propertiesKeyByte), new String(propertiesValueByte));
             }
 
 
-            byte len0 = byteBuffer.get();
+            byte len0 = buffBytes[indexNum++];
             int bodyLen = 0;
             if (len0 != 0) {
                 int temp = len0 * 16129;
@@ -789,7 +674,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
                 bodyLen += temp;
             }
 
-            byte len1 = byteBuffer.get();
+            byte len1 = buffBytes[indexNum++];
 
             if (len1 != 0) {
                 int temp = len1 * 127;
@@ -799,11 +684,11 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
 
 
-            bodyLen += byteBuffer.get();
+            bodyLen += buffBytes[indexNum++];
 
             byte[] body2 = new byte[bodyLen];
             for (int indexBody = 0; indexBody < bodyLen; indexBody++) {
-                body2[indexBody] = byteBuffer.get();
+                body2[indexBody] = buffBytes[indexNum++];
 
             }
             defaultBytesMessage.setBody(body2);
@@ -834,7 +719,6 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
             }
             Queue queue = null;
 
-
             for (int id : list) {
 
                 queue = queueMap.get(id);
@@ -842,7 +726,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
             }
 
 
-            if (indexNum<= byteBuffer.limit() - 2 && byteBuffer.get(byteBuffer.position()) != SendConstants.cutFlag) {
+            if (indexNum<= buffBytes.length - 2 && buffBytes[indexNum] != SendConstants.cutFlag) {
                 defaultBytesMessage = new DefaultBytesMessage(null);
             }else {
                 break;
@@ -924,84 +808,6 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
         if (flushFlag.compareAndSet(true,false)) {
 
-            ByteBuffer byteBufferKey = ByteBuffer.allocate(SendConstants.buffSize);
-
-
-            FileInputStream fileInputStreamKey = null;
-            try {
-                fileInputStreamKey = new FileInputStream(properties.getString("STORE_PATH")+"/"+"keys");
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }
-            FileChannel fileChannel1 = fileInputStreamKey.getChannel();
-            try {
-                fileChannel1.read(byteBufferKey);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            try {
-                fileChannel1.close();
-
-                fileInputStreamKey.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            byte[] keyByte = byteBufferKey.array();
-
-            int headerKeyNum = keyByte[0];
-            int propertiesKeyNum = keyByte[1];
-            int index = 2;
-             headerStrings = new String[headerKeyNum];
-             propertiesStrings = new String[propertiesKeyNum];
-
-            for (int check = 0;check < headerStrings.length;check++) {
-
-                int headerKeyLen = keyByte[index++];
-
-                byte[] headerKey = new byte[headerKeyLen];
-                for (int indexNum = 0;indexNum < headerKeyLen; indexNum++) {
-
-                    headerKey[indexNum] = keyByte[index++];
-
-
-
-
-
-                }
-                headerStrings[check] = new String(headerKey);
-
-
-
-            }
-
-            for (int check = 0;check < propertiesStrings.length;check++) {
-
-                int headerPropertiesLen = keyByte[index++];
-
-                byte[] propertiesKey = new byte[headerPropertiesLen];
-                for (int indexNum = 0;indexNum < headerPropertiesLen; indexNum++) {
-
-                    propertiesKey[indexNum] = keyByte[index++];
-
-
-
-
-
-                }
-                propertiesStrings[check] = new String(propertiesKey);
-
-
-
-            }
-
-
-
-
-
-
-
-
             FileInputStream fileInputStream = null;
             try {
                 fileInputStream = new FileInputStream(properties.getString("STORE_PATH")+"/"+atomicIntegerFileName.getAndAdd(1));
@@ -1028,7 +834,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
 
    public void flush(KeyValue properties,DefaultProducer defaultProducer) {
-        ByteBuffer byteBuffer = defaultProducer.getFlipByteBuffer(false);
+        ByteBuffer byteBuffer = defaultProducer.getByteBuffer();
 
             File file = new File(properties.getString("STORE_PATH") + "/" + atomicIntegerFileName.getAndAdd(1));
 
@@ -1065,6 +871,7 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
 
             }
 
+            System.out.println("wwwwwwwwwwww");
         }
 
 
@@ -1077,24 +884,86 @@ System.out.println(defaultBytesMessage1.headers().getString("topic"));
         this.atomicIntegerThreadId = atomicIntegerThreadId;
     }
 
-    public ByteBuffer getFlipBuffer(boolean flag){
-        if (flag == true) {
-            if (resultBuffer == byteBuffer) {
-                resultBuffer = byteBuffer2;
-                return byteBuffer2;
 
-            } else {
-                resultBuffer = byteBuffer;
-                return byteBuffer;
+    public static void main(String[] args) {
+        MessageStore main = new MessageStore();
+        byte[] body = "hello".getBytes();
+        byte[] headerKey = "headerKey".getBytes();
+        byte[] headerValue = "headerValue".getBytes();
+        byte[] propertiesKey = "propertiesKey".getBytes();
+        byte[] propertiesValue = "propertiesValue".getBytes();
+        DefaultBytesMessage defaultBytesMessage1 = new DefaultBytesMessage(body);
+        defaultBytesMessage1.putHeaders("headerKey", "headerValue");
+
+        defaultBytesMessage1.putProperties("propertiesKey", "propertiesValue");
+
+        byte[] buffBytes = main.serianized(defaultBytesMessage1);
+
+        int headerNum = 0;
+        int propertiesNum = 0;
+        int indexNum = 0;
+        int headerKeyLen = 0;
+        int headerValueLen = 0;
+        int propertiesKeyLen = 0;
+        int propertiesValueLen = 0;
+        DefaultBytesMessage defaultBytesMessage = new DefaultBytesMessage(null);
+        while (indexNum < buffBytes.length) {
+            headerNum = buffBytes[indexNum++];
+            propertiesNum = buffBytes[indexNum++];
+            for (int headerIndex = 0; headerIndex < headerNum; headerIndex++) {
+                headerKeyLen = buffBytes[indexNum++];
+                byte[] headerKeyByte = new byte[headerKeyLen];
+                for (int headerKeyIndex = 0; headerKeyIndex < headerKeyLen; headerKeyIndex++) {
+                    headerKeyByte[headerKeyIndex] = buffBytes[indexNum++];
+
+                }
+
+                headerValueLen = buffBytes[indexNum++];
+
+                byte[] headerValueByte = new byte[headerValueLen];
+                for (int headerValueIndex = 0; headerValueIndex < headerValueLen; headerValueIndex++) {
+                    headerValueByte[headerValueIndex] = buffBytes[indexNum++];
+
+                }
+
+
+                defaultBytesMessage.putHeaders(new String(headerKeyByte), new String(headerValueByte));
             }
-        }else {
-            if (resultBuffer == null) {
-                resultBuffer = byteBuffer;
+            for (int propertiesIndex = 0; propertiesIndex < propertiesNum; propertiesIndex++) {
+                propertiesKeyLen = buffBytes[indexNum++];
+                byte[] propertiesKeyByte = new byte[propertiesKeyLen];
+                for (int propertiesKeyIndex = 0; propertiesKeyIndex < propertiesKeyLen; propertiesKeyIndex++) {
+                    propertiesKeyByte[propertiesKeyIndex] = buffBytes[indexNum++];
+
+                }
+
+                propertiesValueLen = buffBytes[indexNum++];
+                byte[] propertiesValueByte = new byte[propertiesValueLen];
+                for (int propertiesValueIndex = 0; propertiesValueIndex < propertiesValueLen; propertiesValueIndex++) {
+                    propertiesValueByte[propertiesValueIndex] = buffBytes[indexNum++];
+
+                }
+
+                defaultBytesMessage.putProperties(new String(propertiesKeyByte), new String(propertiesValueByte));
+            }
+            int bodyLen = 0;
+            bodyLen = buffBytes[indexNum++];
+
+            byte[] body2 = new byte[bodyLen];
+            for (int indexBody = 0; indexBody < bodyLen; indexBody++) {
+                body2[indexBody] = buffBytes[indexNum++];
 
             }
-            return resultBuffer;
+            defaultBytesMessage.setBody(body2);
+/*
+
+            String key = defaultBytesMessage.headers().keySet().iterator().next();
+            String value = defaultBytesMessage.headers().getString(key);
+            String key2 = defaultBytesMessage.properties().keySet().iterator().next();
+            String value2 = defaultBytesMessage.properties().getString(key2);
+*/
+
+
         }
-    }
 
-
-    }
+    }}

@@ -77,10 +77,14 @@ public class DefaultProducer implements Producer {
 
 
         }
+
         for (String  key :properties.keySet()) {
+            if ("STORE_PATH".equals(key)) {
+                continue;
 
-
+            }
             defaultBytesMessage.putProperties(key, properties.getString(key));
+
         }
         return defaultBytesMessage;
 
@@ -102,8 +106,10 @@ public class DefaultProducer implements Producer {
 
 
         for (String  key :properties.keySet()) {
+            if ("STORE_PATH".equals(key)) {
+                continue;
 
-
+            }
             defaultBytesMessage.putProperties(key, properties.getString(key));
         } return defaultBytesMessage;
     }
