@@ -59,18 +59,19 @@ public class MessageStore {
    // private AtomicBoolean insertFlag = new AtomicBoolean(true);
 
 
-    private int size = 0;
+    private volatile  AtomicInteger size = new AtomicInteger(0);
 
 
     public  byte[] serianized(DefaultBytesMessage message,KeyValue properties){
 
-        if (message.headers().keySet().size() + message.properties().keySet().size() > size) {
+        if (message.headers().keySet().size() + message.properties().keySet().size() > size.get()) {
+            size.set(message.headers().keySet().size() + message.properties().keySet().size());
+
 
             Set headerKeySet = message.headers().keySet();
 
             int headNum = headerKeySet.size();
 
-            size = message.headers().keySet().size() + message.properties().keySet().size();
 
             byte[][] headerKeyByte = new byte[headNum][];
 
