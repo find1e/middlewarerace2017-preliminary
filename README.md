@@ -1,5 +1,5 @@
 ## 0. 项目结构
-![image](https://github.com/jyunchyou/middlewarerace2017-preliminary/img/mq.png)
+![image](https://github.com/jyunchyou/middlewarerace2017-preliminary/blob/master/img/mq.png)
 
 
 
