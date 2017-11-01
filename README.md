@@ -1,5 +1,6 @@
->写在前面: 
-> 1. 在开始coding前请仔细阅读以下内容
+## 0. 项目结构
+![image](https://github.com/jyunchyou/middlewarerace2017-preliminary/img/mq.png)
+
 
 
 ## 1. 题目背景
